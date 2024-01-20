@@ -1,0 +1,52 @@
+{
+  "name": "smtp2graph",
+  "version": "0.1.0",
+  "description": "SMTP server to relay over MSGraph API / Microsoft 365 Exchange Online",
+  "main": "index.js",
+  "scripts": {
+    "dev": "webpack --mode \"development\"",
+    "watch": "webpack --mode \"development\" -w",
+    "build": "webpack --mode \"production\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RoelVB/SMTP2Graph.git"
+  },
+  "keywords": [
+    "microsoft",
+    "office",
+    "exchange",
+    "graph",
+    "smtp",
+    "365"
+  ],
+  "author": "RoelVB",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/RoelVB/SMTP2Graph/issues"
+  },
+  "homepage": "https://github.com/RoelVB/SMTP2Graph#readme",
+  "devDependencies": {
+    "@types/base64-stream": "^1.0.5",
+    "@types/mailparser": "^3.4.4",
+    "@types/nodemailer": "^6.4.14",
+    "@types/smtp-server": "^3.5.10",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "@azure/msal-node": "^2.6.1",
+    "async-mutex": "^0.4.0",
+    "axios": "^1.6.5",
+    "base64-stream": "^1.0.0",
+    "chokidar": "^3.5.3",
+    "ip-cidr": "^4.0.0",
+    "nodemailer": "^6.9.8",
+    "rate-limiter-flexible": "^4.0.0",
+    "smtp-server": "^3.13.0",
+    "winston": "^3.11.0",
+    "yaml": "^2.3.4"
+  }
+}

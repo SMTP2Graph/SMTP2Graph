@@ -1,0 +1,70 @@
+# This next line loads the schema for this config file to detect issues,
+# provide additional information and add autocomplete when editing this file
+# (you might need to install an extension in your IDE for this)
+# yaml-language-server: $schema=https://raw.githubusercontent.com/SMTP2Graph/SMPT2Graph/main/config.schema.json
+
+# Optional: operation mode (default = full)
+# full = Run SMTP server and relay emails to the Graph API
+# receive = Only run SMTP server and place received emails in queue (do not send them)
+# send = Only send items from the queue folder, but do not run the SMTP server to accept emails
+mode: full
+
+# Required (in 'full' and 'send' mode): App. registration information
+send:
+  appReg:
+    tenant: contoso # The name of the tenant (what comes before .onmicrosoft.com)
+    id: 01234567-89ab-cdef-0123-456789abcdef
+    certificate:
+      thumbprint: 0123456789ABCDEF0123456789ABCDEF01234567
+      privateKeyPath: client.key
+    # Optional: If you don't want to use a client certificate you could use a secret instead
+    secret: VGhpcyBpcyB2ZXJ5IHNlY3JldCE=
+  # Optional: Times to retry sending a message when it failed (set to 0 to disable retries)
+  retryLimit: 10 # Default: 3
+  # Optional: Minutes between tries
+  retryInterval: 10 # Default: 5
+
+# Optional: SMTP server config
+receive:
+  # Optional: SMTP server port (default: 25)
+  port: 587
+  # Optional: Listen for connection on a specific IP (default: all addresses)
+  listenAddress: 127.0.0.1
+  # Optional: Require a secure (TLS) connection
+  # When false, clients can still upgrade to a secure connection (default: false)
+  secure: true
+  # Optional: Path to your private key
+  tlsKeyPath: private.key
+  # Optional: Path to your certificate
+  tlsCertPath: server.crt
+  # Optional: Maximum message size
+  # Accepts string ending with 'k' (Kilobytes) or 'm' (Megabytes). Default: 100m
+  maxSize: 25m
+  # Optional: SMTP welcome banner
+  # When not defined the banner will show "SMTP2Graph <versionnumer>"
+  banner: My SMTP server
+  # Optional: IP whitelist
+  # When defined, only IP addresses or subnets in this list will be able to connect
+  ipWhitelist:
+    - 127.0.0.1
+    - 192.168.30.0/24
+    - ::1
+    - fe80::/10
+  # Optional: Allowed FROM addresses
+  allowedFrom:
+    - noreply@example.com
+    - something@example.com
+  # Optional: Allowed RCPT addresses
+  allowedRcpt:
+    - recipient1@example.com
+    - recipient2@example.com
+  # Optional: Allows authentication even if connection is not secured first (default: false)
+  allowInsecureAuth: true
+  # Optional: Require login
+  requireAuth: true
+  # Optional (required when 'requireAuth' is true): Define SMTP users
+  users:
+    - username: users
+      password: P@ssword!
+      allowedFrom: # Optional
+        - noreply@example.com
