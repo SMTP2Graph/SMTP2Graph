@@ -18,7 +18,7 @@ send:
       thumbprint: 0123456789ABCDEF0123456789ABCDEF01234567
       privateKeyPath: client.key
     # Optional: If you don't want to use a client certificate you could use a secret instead
-    secret: VGhpcyBpcyB2ZXJ5IHNlY3JldCE=
+    # secret: VGhpcyBpcyB2ZXJ5IHNlY3JldCE=
   # Optional: Times to retry sending a message when it failed (set to 0 to disable retries)
   retryLimit: 10 # Default: 3
   # Optional: Minutes between tries
@@ -68,3 +68,11 @@ receive:
       password: P@ssword!
       allowedFrom: # Optional
         - noreply@example.com
+  # Optional: Rate limiter. Stop accepting connection after a certain amount of connection within a certain time period
+  rateLimit:
+    duration: 60 # Time period in seconds (default: 600 = 10 minutes)
+    limit: 10 # Accepted number of connection in the time period (default: 10000)
+  # Optional: Brute force protection. Block login attempts after a certain number of failed attempts in a certain time period
+  authLimit:
+    duration: 30 # Time period in seconds (default: 60 = 1 minute)
+    limit: 5 # Maximum number of attempts in the time period (default: 10)
