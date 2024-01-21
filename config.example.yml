@@ -1,7 +1,7 @@
 # This next line loads the schema for this config file to detect issues,
 # provide additional information and add autocomplete when editing this file
 # (you might need to install an extension in your IDE for this)
-# yaml-language-server: $schema=https://raw.githubusercontent.com/SMTP2Graph/SMPT2Graph/main/config.schema.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/SMTP2Graph/SMTP2Graph/main/config.schema.json
 
 # Optional: operation mode (default = full)
 # full = Run SMTP server and relay emails to the Graph API
