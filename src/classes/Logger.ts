@@ -21,12 +21,12 @@ const logger = winston.createLogger({
         winston.format.json(),
     ),
     transports: [
-        new winston.transports.File({filename: path.join(logsDir, 'error.log'), level: 'error', maxsize: 2048, maxFiles: 10}),
-        new winston.transports.File({filename: path.join(logsDir, 'combined.log'), level: 'info', maxsize: 2048, maxFiles: 10}),
+        new winston.transports.File({filename: path.join(logsDir, 'error.log'), level: 'error', maxsize: 2*1024*1024, maxFiles: 10}),
+        new winston.transports.File({filename: path.join(logsDir, 'combined.log'), level: 'info', maxsize: 2*1024*1024, maxFiles: 10}),
         new winston.transports.Console({format: consoleFormat, stderrLevels: ['error']}),
     ],
     exceptionHandlers: [
-        new winston.transports.File({filename: path.join(logsDir, 'exceptions.log'), maxsize: 2048, maxFiles: 10}),
+        new winston.transports.File({filename: path.join(logsDir, 'exceptions.log'), maxsize: 2*1024*1024, maxFiles: 10}),
         new winston.transports.Console({format: consoleFormat}),
     ],
 });
