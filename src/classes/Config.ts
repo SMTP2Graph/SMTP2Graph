@@ -2,7 +2,7 @@ import fs from 'fs';
 import { parse as parseYaml } from 'yaml';
 import IPCIDR from 'ip-cidr';
 
-interface IConfig
+export interface IConfig
 {
     mode: 'full'|'receive'|'send';
     send?: {
@@ -43,8 +43,6 @@ interface IConfig
         ipWhitelist?: string[];
         /** Only accept those addresses as FROM addresses */
         allowedFrom?: string[];
-        /** Only accept those addresses as RCPT addresses */
-        allowedRcpt?: string[];
         /** Allows authentication even if connection is not secured first */
         allowInsecureAuth?: boolean;
         /** Require login */
@@ -295,15 +293,6 @@ export class Config
             return true;
         else
             return this.#config.receive.allowedFrom.some(allowed=>allowed.toLowerCase()===from.toLowerCase());
-    }
-
-    /** Check if a RCPT address is allowed */
-    static isRcptAllowed(from: string): boolean
-    {
-        if(!this.#config.receive?.allowedRcpt) // Setting is undefined? Then all addresses are allowed
-            return true;
-        else
-            return this.#config.receive.allowedRcpt.some(allowed=>allowed.toLowerCase()===from.toLowerCase());
     }
 
     static isUserAllowed(username: string, password: string): boolean

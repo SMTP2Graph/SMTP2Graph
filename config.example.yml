@@ -54,10 +54,6 @@ receive:
   allowedFrom:
     - noreply@example.com
     - something@example.com
-  # Optional: Allowed RCPT addresses
-  allowedRcpt:
-    - recipient1@example.com
-    - recipient2@example.com
   # Optional: Allows authentication even if connection is not secured first (default: false)
   allowInsecureAuth: true
   # Optional: Require login

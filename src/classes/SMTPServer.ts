@@ -29,7 +29,6 @@ export class SMTPServer
             onConnect: this.#onConnect,
             onAuth: this.#onAuth,
             onMailFrom: this.#onMailFrom,
-            onRcptTo: this.#onRcptTo,
             onData: this.#onData,
             authOptional: !Config.smtpRequireAuth,
             banner: Config.smtpBanner ?? `SMTP2Graph ${VERSION}`,
@@ -86,14 +85,6 @@ export class SMTPServer
             callback();
         else
             callback(new Error(`FROM "${address.address}" not allowed`));
-    };
-
-    #onRcptTo: SMTPServerOptions['onRcptTo'] = (address, session, callback)=>
-    {
-        if(Config.isRcptAllowed(address.address))
-            callback();
-        else
-            callback(new Error(`RCPT "${address.address}" not allowed`));
     };
 
     #onData: SMTPServerOptions['onData'] = (stream, session, callback)=>
