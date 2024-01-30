@@ -220,11 +220,6 @@
                     "title": "Accepted FROM addresses",
                     "description": "Only accept those addresses as FROM addresses"
                 },
-                "allowedRcpt": {
-                    "allOf": [{"$ref": "#/definitions/emailArray"}],
-                    "title": "Accepted RCPT addresses",
-                    "description": "Only accept those addresses as RCPT addresses"
-                },
                 "allowInsecureAuth": {
                     "title": "Allows authentication even if connection is not secured first",
                     "description": "Default: false",
