@@ -6,5 +6,15 @@
       "strict": true,
       "sourceMap": true,
       "allowSyntheticDefaultImports": true
-    }
+    },
+    "exclude": [
+      "test"
+    ],
+    "ts-node": {
+      "transpileOnly": true,
+      "compilerOptions": {
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext"
+      }
+    }  
   }

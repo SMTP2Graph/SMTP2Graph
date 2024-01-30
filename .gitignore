@@ -3,3 +3,4 @@ dist
 mailroot
 config.yml
 *.log
+.env
