@@ -17,13 +17,16 @@ export const config = {
     additionalRecipient: process.env.ADDITIONALRECIPIENT!,
 };
 
-if(!config.clientId)
-    throw new Error('No clientId defined');
-else if(!config.clientSecret)
-    throw new Error('No clientSecret defined');
-else if(!config.clientTenant)
-    throw new Error('No clientTenant defined');
-else if(!config.mailbox)
-    throw new Error('No mailbox defined');
-else if(!config.additionalRecipient)
-    throw new Error('No additionalRecipient defined');
+export function validateSendConfig()
+{
+    if(!config.clientId)
+        throw new Error('No clientId defined');
+    else if(!config.clientSecret)
+        throw new Error('No clientSecret defined');
+    else if(!config.clientTenant)
+        throw new Error('No clientTenant defined');
+    else if(!config.mailbox)
+        throw new Error('No mailbox defined');
+    else if(!config.additionalRecipient)
+        throw new Error('No additionalRecipient defined');
+}

@@ -2,10 +2,12 @@ import { expect } from 'chai';
 import { createTransport } from 'nodemailer';
 import Mail from 'nodemailer/lib/mailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
-import { config } from '../_config';
+import { config, validateSendConfig } from '../_config';
 import { Message } from '@microsoft/microsoft-graph-types';
 import { Mailbox } from '../classes/Mailbox';
 import { parseMailAddresses, stringOrBufferToString } from '../01receive/Helpers';
+
+validateSendConfig();
 
 export interface ISubmitMail
 {
