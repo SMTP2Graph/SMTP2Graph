@@ -2,6 +2,7 @@ import fs from 'fs';
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process';
 import { stringify } from 'yaml';
 import type { IConfig } from '../../src/classes/Config';
+import { defaultTransportOptions } from '../01receive/Helpers';
 
 export class Server
 {
@@ -23,6 +24,9 @@ export class Server
 
     start(timeout: number = 5000): Promise<void>
     {
+        // Apply default port from our transport options
+        if(!this.config.receive?.port) this.config = {...this.config, receive: {...this.config.receive, port: defaultTransportOptions.port}};
+
         // Create config file
         try {
             fs.writeFileSync(this.#configFile, stringify(this.config));

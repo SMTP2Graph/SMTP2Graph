@@ -13,7 +13,7 @@ export interface ISubmitMail
 
 export const defaultTransportOptions: SMTPTransport.Options = {
     host: '127.0.0.1',
-    port: 25,
+    port: 1337,
     ignoreTLS: true,
 };
 
