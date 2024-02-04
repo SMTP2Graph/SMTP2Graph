@@ -6,7 +6,7 @@ import { defaultTransportOptions } from '../01receive/Helpers';
 
 export class Server
 {
-    #serverFile = 'dist/server.js';
+    #serverFile = process.argv.find(f=>f.startsWith('--serverFile='))?.substring(13) || 'dist/server.js';
     #configFile = 'testconfig.yml';
     #proc: ChildProcessWithoutNullStreams | undefined;
 
@@ -36,7 +36,10 @@ export class Server
 
         // Start the server
         return new Promise<void>((resolve, reject)=>{
-            this.#proc = spawn('node', [this.#serverFile, `--config=${this.#configFile}`]);
+            if(this.#serverFile.endsWith('.js'))
+                this.#proc = spawn('node', [this.#serverFile, `--config=${this.#configFile}`]);
+            else // We're testing a binary file?
+                this.#proc = spawn(this.#serverFile, [`--config=${this.#configFile}`]);
             let errorStr: string = '';
 
             const onTimeout = ()=>{
