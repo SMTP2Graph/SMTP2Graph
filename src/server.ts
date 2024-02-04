@@ -14,5 +14,10 @@ import { SMTPServer } from './classes/SMTPServer';
 
     const queue = new MailQueue();
     const server = new SMTPServer(queue);
-    server.listen();
+    try {
+        await server.listen();
+    } catch(error) {
+        log('error', `Failed to start SMTP server. ${String(error)}`, {error});
+        process.exit(1);
+    }
 })();

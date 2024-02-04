@@ -38,16 +38,21 @@ export class SMTPServer
             key: Config.smtpTlsKey,
             cert: Config.smtpTlsCert,
         });
-
-        this.#server.on('error', error=>{
-            log('error', `An error occured`, {error});
-        });
     }
 
     listen()
     {
-        this.#server.listen(Config.smtpPort, Config.smtpListenIp, ()=>{
-            log('info', `Server started on ${Config.smtpListenIp || 'any-ip'}:${Config.smtpPort}`);
+        return new Promise<void>((resolve, reject)=>{
+            this.#server.on('error', reject);
+
+            this.#server.listen(Config.smtpPort, Config.smtpListenIp, ()=>{
+                log('info', `Server started on ${Config.smtpListenIp || 'any-ip'}:${Config.smtpPort}`);
+                this.#server.off('error', reject);
+                this.#server.on('error', error=>{
+                    log('error', `An error occured`, {error});
+                });
+                resolve();
+            });
         });
     }
 
