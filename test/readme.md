@@ -19,3 +19,10 @@ ADDITIONALRECIPIENT="test2@example.com"
 
 - The application registration needs the permissions `Mail.Read` and `Mail.Send` to the `MAILBOX`
 - `ADDITIONALRECIPIENT` is an additional recipient (do not use an alias for this, but a different mailbox or distribution group)
+
+## Run tests using binary/sea build
+
+It's also possible to run the tests using a Single Executable Application build. Just append the binary's path to the test path like this:
+```
+npm run test -- --serverFile=mybuilds/smtp2graph-win-x64.exe
+```
