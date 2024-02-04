@@ -8,7 +8,8 @@
       "allowSyntheticDefaultImports": true
     },
     "exclude": [
-      "test"
+      "test",
+      "tools"
     ],
     "ts-node": {
       "transpileOnly": true,
