@@ -24,15 +24,7 @@ jobs:
         run: npm run build
 
       - name: Run standard tests
-        run: npm run test:receive -- --reporter json --reporter-option output=test-results.json
-
-      - name: Test report
-        uses: phoenix-actions/test-reporting@v12
-        if: success() || failure()
-        with:
-          name: Test result
-          path: test-results.json
-          reporter: mocha-json
+        run: npm run test:receive -- --logging error
 
       - name: Upload logs
         uses: actions/upload-artifact@v4
