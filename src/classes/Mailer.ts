@@ -17,7 +17,7 @@ export class Mailer
     /** Prevent sending more than 4 messages in parallel (see: https://learn.microsoft.com/en-us/graph/throttling-limits#outlook-service-limits) */
     static #sendSemaphore = new Semaphore(4);
 
-    static #msalClient = (Config.clientId && Config.clientSecret)?new ConfidentialClientApplication({
+    static #msalClient = (Config.clientId && (Config.clientSecret || (Config.clientCertificateThumbprint && Config.clientCertificateKeyPath)))?new ConfidentialClientApplication({
         auth: {
             authority: `https://login.microsoftonline.com/${Config.clientTenant}.onmicrosoft.com`,
             clientId: Config.clientId,
