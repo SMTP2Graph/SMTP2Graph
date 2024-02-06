@@ -36,6 +36,13 @@ export function log(level: 'verbose'|'info'|'warn', msg: string, meta?: ILogMeta
 export function log(level: 'error', msg: string, meta: Required<ILogMeta>): Promise<void>;
 export function log(level: 'verbose'|'info'|'warn'|'error', msg: string, meta?: ILogMeta): Promise<void>
 {
+    if(meta?.error instanceof Error)
+    {
+        meta.name = meta.error.name;
+        meta.stack = meta.error.stack;
+        meta.error = meta.error.message;
+    }
+
     return new Promise<void>((resolve, reject)=>{
         logger.log(level, msg, meta, (err)=>{
             if(err)

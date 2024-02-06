@@ -66,7 +66,7 @@ export class Mailer
                         if(data.error.code === 'ErrorAccessDenied')
                             throw new MailboxAccessDenied(`Access to mailbox "${sender}" denied`);
                         else
-                            throw new Error(data.error);
+                            throw new Error(JSON.stringify(data.error));
                     }
                     else
                         throw data;
