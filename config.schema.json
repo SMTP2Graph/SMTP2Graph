@@ -127,6 +127,11 @@
                     "title": "Minutes between tries",
                     "description": "Default: 5 minutes",
                     "type": "integer"
+                },
+                "forceMailbox": {
+                    "title": "Always send from this mailbox",
+                    "description": "Must be a mailbox, can't be a distribution list",
+                    "type": "string"
                 }
             }
         },
@@ -280,11 +285,6 @@
                     }
                 }
             }
-        },
-        "forcedSender": {
-            "title": "Always send from this mailbox",
-            "description": "Must be a mailbox, can't be a distribution list",
-            "type": "string"
         }
 	}
 }

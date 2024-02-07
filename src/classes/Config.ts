@@ -23,6 +23,8 @@ export interface IConfig
         retryLimit?: number;
         /** Minutes between tries */
         retryInterval?: number;
+        /** Always send from this mailbox */
+        forceMailbox?: string;
     },
     receive?: {
         /** The port on which the SMTP server will listen (default: 25) */
@@ -57,8 +59,6 @@ export interface IConfig
             limit?: number;
         };
     },
-    /** Always send from this email address (must be a mailbox, can't be a distribution list */
-    forcedSender?: string;
 }
 
 export class InvalidConfig extends Error { }
@@ -161,9 +161,9 @@ export class Config
         return this.#config.send?.retryInterval ?? 5;
     }
 
-    static get forcedSender()
+    static get forceMailbox()
     {
-        return this.#config.forcedSender;
+        return this.#config.send?.forceMailbox;
     }
 
     static get smtpPort(): number

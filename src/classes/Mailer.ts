@@ -33,7 +33,7 @@ export class Mailer
     {
         return this.#sendSemaphore.runExclusive(async ()=>{
             // Determine the sender
-            let sender = Config.forcedSender;
+            let sender = Config.forceMailbox;
             if(!sender) // There's no forced sender in the config, so we get it from the mail data
             {
                 const senderObj = await this.#findSender(filePath);

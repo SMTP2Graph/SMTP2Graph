@@ -23,6 +23,8 @@ send:
   retryLimit: 10 # Default: 3
   # Optional: Minutes between tries
   retryInterval: 10 # Default: 5
+  # Optional: Force SMTP2Graph to always send from this mailbox. This mailbox must have permission to send as or on behalf of the from address
+  forceMailbox: smtp2graph@example.com
 
 # Optional: SMTP server config
 receive:
