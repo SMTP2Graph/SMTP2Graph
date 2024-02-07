@@ -17,7 +17,7 @@ export class Mailer
     /** Prevent sending more than 4 messages in parallel (see: https://learn.microsoft.com/en-us/graph/throttling-limits#outlook-service-limits) */
     static #sendSemaphore = new Semaphore(4);
 
-    static #msalClient = (Config.clientId && Config.clientSecret)?new ConfidentialClientApplication({
+    static #msalClient = (Config.clientId && (Config.clientSecret || (Config.clientCertificateThumbprint && Config.clientCertificateKeyPath)))?new ConfidentialClientApplication({
         auth: {
             authority: `https://login.microsoftonline.com/${Config.clientTenant}.onmicrosoft.com`,
             clientId: Config.clientId,
@@ -33,7 +33,7 @@ export class Mailer
     {
         return this.#sendSemaphore.runExclusive(async ()=>{
             // Determine the sender
-            let sender = Config.forcedSender;
+            let sender = Config.forceMailbox;
             if(!sender) // There's no forced sender in the config, so we get it from the mail data
             {
                 const senderObj = await this.#findSender(filePath);
@@ -66,7 +66,7 @@ export class Mailer
                         if(data.error.code === 'ErrorAccessDenied')
                             throw new MailboxAccessDenied(`Access to mailbox "${sender}" denied`);
                         else
-                            throw new Error(data.error);
+                            throw new Error(JSON.stringify(data.error));
                     }
                     else
                         throw data;
