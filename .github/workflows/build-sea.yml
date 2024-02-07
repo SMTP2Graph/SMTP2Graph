@@ -34,7 +34,7 @@ jobs:
 
       # Build with new name and version
       - name: Build binaries
-        run: ./node_modules/.bin/ts-node tools/build-binaries.ts
+        run: npm run build-binaries
 
       - name: Upload build artifact
         if: ${{ inputs.fetchPackageJson }}

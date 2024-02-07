@@ -7,6 +7,7 @@
     "dev": "webpack --mode \"development\"",
     "watch": "webpack --mode \"development\" -w",
     "build": "webpack --mode \"production\"",
+    "build-binaries": "ts-node ./tools/build-binaries.ts",
     "test": "mocha test/**/*.spec.ts",
     "test:receive": "mocha test/01receive/**/*.spec.ts",
     "test:send": "mocha test/02send/**/*.spec.ts"
