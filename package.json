@@ -1,6 +1,6 @@
 {
   "name": "smtp2graph",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "SMTP server to relay over MSGraph API / Microsoft 365 Exchange Online",
   "main": "index.js",
   "scripts": {
