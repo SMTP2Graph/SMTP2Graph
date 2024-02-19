@@ -32,11 +32,12 @@ export class SMTPServer
             onData: this.#onData,
             authOptional: !Config.smtpRequireAuth,
             banner: Config.smtpBanner ?? `SMTP2Graph ${VERSION}`,
-            allowInsecureAuth: Config.smtpAllowInsecureAuth,
             size: Config.smtpMaxSize,
             secure: Config.smtpSecure,
             key: Config.smtpTlsKey,
             cert: Config.smtpTlsCert,
+            allowInsecureAuth: Config.smtpAllowTls?Config.smtpAllowInsecureAuth:true,
+            disabledCommands: Config.smtpAllowTls?undefined:['STARTTLS'],
         });
     }
 

@@ -45,7 +45,7 @@ export interface IConfig
         ipWhitelist?: string[];
         /** Only accept those addresses as FROM addresses */
         allowedFrom?: string[];
-        /** Allows authentication even if connection is not secured first */
+        /** Allows authentication even if connection is not secured first, when tlsKeyPath and tlsCertPath are set */
         allowInsecureAuth?: boolean;
         /** Require login */
         requireAuth?: boolean;
@@ -201,6 +201,11 @@ export class Config
     {
         if(this.smtpTlsCertPath && fs.existsSync(this.smtpTlsCertPath))
             return fs.readFileSync(this.smtpTlsCertPath);
+    }
+
+    static get smtpAllowTls()
+    {
+        return Boolean(this.smtpTlsCertPath && this.smtpTlsKeyPath && fs.existsSync(this.smtpTlsCertPath) && fs.existsSync(this.smtpTlsKeyPath));
     }
 
     /** Maximum message size in bytes */
