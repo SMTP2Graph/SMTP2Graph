@@ -226,7 +226,7 @@
                     "description": "Only accept those addresses as FROM addresses"
                 },
                 "allowInsecureAuth": {
-                    "title": "Allows authentication even if connection is not secured first",
+                    "title": "Allows authentication even if connection is not secured first, when tlsKeyPath and tlsCertPath are set",
                     "description": "Default: false",
                     "type": "boolean"
                 },

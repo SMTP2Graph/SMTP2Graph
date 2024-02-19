@@ -56,7 +56,7 @@ receive:
   allowedFrom:
     - noreply@example.com
     - something@example.com
-  # Optional: Allows authentication even if connection is not secured first (default: false)
+  # Optional: Allows authentication even if connection is not secured first, when tlsKeyPath and tlsCertPath are set (default: false)
   allowInsecureAuth: true
   # Optional: Require login
   requireAuth: true
