@@ -9,6 +9,7 @@ import { Config } from './Config';
 import { UnrecoverableError } from './Constants';
 
 export class MailboxAccessDenied extends UnrecoverableError { }
+export class InvalidMailContent extends UnrecoverableError { }
 
 export class Mailer
 {
@@ -65,6 +66,8 @@ export class Mailer
                     {
                         if(data.error.code === 'ErrorAccessDenied')
                             throw new MailboxAccessDenied(`Access to mailbox "${sender}" denied`);
+                        else if(data.error.code === 'ErrorMimeContentInvalidBase64String')
+                            throw new InvalidMailContent(`Invalid content for mail "${filePath}"`);
                         else
                             throw new Error(JSON.stringify(data.error));
                     }
