@@ -1,0 +1,58 @@
+name: Publish Docker
+
+on:
+  workflow_call:
+    inputs:
+      fetchPackageJson:
+        description: Fetch package.json from artifacts
+        type: boolean
+  workflow_dispatch:
+
+jobs:
+  publish-docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Download package.json
+        if: ${{ inputs.fetchPackageJson }}
+        uses: actions/download-artifact@v4
+        with:
+          name: package-json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build SMTP2Graph
+        run: npm run build
+
+      - name: Read package.json
+        id: manifest
+        uses: zoexx/github-action-json-file-properties@1.0.4
+        with:
+          file_path: package.json
+
+      - name: Build image
+        run: docker build --build-arg VERSION=${{ steps.manifest.outputs.version }} -t smtp2graph:latest .
+
+      - name: Test image
+        run: docker run -v .:/data --entrypoint /bin/test.sh smtp2graph:latest
+
+      - name: Add additional tags
+        run: |
+          docker image tag smtp2graph:latest smtp2graph/smtp2graph:latest
+          docker image tag smtp2graph:latest smtp2graph/smtp2graph:v${{ steps.manifest.outputs.version }}
+          major_version=$(echo "${{ steps.manifest.outputs.version }}" | cut -d'.' -f1)
+          docker image tag smtp2graph:latest smtp2graph/smtp2graph:v$major_version
+
+      - name: Push image
+        run: |
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          docker push --all-tags smtp2graph/smtp2graph
