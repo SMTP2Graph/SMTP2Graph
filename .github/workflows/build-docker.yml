@@ -47,9 +47,10 @@ jobs:
 
       - name: Add additional tags
         run: |
-          docker image tag smtp2graph:latest smtp2graph:v${{ steps.manifest.outputs.version }}
+          docker image tag smtp2graph:latest smtp2graph/smtp2graph:latest
+          docker image tag smtp2graph:latest smtp2graph/smtp2graph:v${{ steps.manifest.outputs.version }}
           major_version=$(echo "${{ steps.manifest.outputs.version }}" | cut -d'.' -f1)
-          docker image tag smtp2graph:latest smtp2graph:v$major_version
+          docker image tag smtp2graph:latest smtp2graph/smtp2graph:v$major_version
 
       - name: Push image
         run: |
