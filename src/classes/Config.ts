@@ -168,7 +168,7 @@ export class Config
 
     static get smtpPort(): number
     {
-        return this.#config.receive?.port ?? 25;
+        return this.getConfigArg('receive.port', 'number') ?? this.#config.receive?.port ?? 25;
     }
 
     static get smtpListenIp()
@@ -325,6 +325,26 @@ export class Config
         }
 
         return this.#configData!;
+    }
+
+    /** Get config value from CLI argument */
+    static getConfigArg(key: string, type: 'string'): string|undefined;
+    static getConfigArg(key: string, type: 'number'): number|undefined;
+    static getConfigArg(key: string, type: 'number'|'string'): number|string|undefined
+    {
+        key = key.toLowerCase();
+        const arg = process.argv.find(f=>f.toLowerCase().startsWith(`--${key}`));
+        
+        const value: string|undefined = arg?.split('=')[1];
+        if(value === undefined) return undefined;
+
+        if(type === 'number') // Get the number value
+        {
+            if(value !== '' && !isNaN(value as any))
+                return Number(value);
+        }
+        else if(type === 'string') // Get the string value
+            return value;
     }
 
 }
