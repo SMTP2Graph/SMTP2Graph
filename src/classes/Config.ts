@@ -2,6 +2,10 @@ import fs from 'fs';
 import { parse as parseYaml } from 'yaml';
 import IPCIDR from 'ip-cidr';
 
+// Set the working dir based on the --baseDir argument
+const baseDir = process.argv.find(arg=>arg.startsWith('--baseDir=') && arg.length > 10)?.substring(10);
+if(baseDir) process.chdir(baseDir);
+
 export interface IConfig
 {
     mode: 'full'|'receive'|'send';
