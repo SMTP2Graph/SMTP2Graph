@@ -6,7 +6,6 @@ on:
       fetchPackageJson:
         description: Fetch package.json from artifacts
         type: boolean
-  workflow_dispatch:
 
 jobs:
   build-sea:

@@ -1,6 +1,6 @@
 # SMTP2Graph
 
-> SMTP2Graph is a robust, versatile and lightweight multiplatform application that will run a SMTP server which relays messages over Microsoft 365/Exchange Online using the Microsoft Graph API.
+> SMTP2Graph is a robust, versatile and lightweight multiplatform application that will run an SMTP server which relays messages over Microsoft 365/Exchange Online using the Microsoft Graph API.
 
 [![GitHub Last Release](https://img.shields.io/github/v/release/SMTP2Graph/SMTP2Graph?style=for-the-badge)](https://github.com/SMTP2Graph/SMTP2Graph/releases)
 [![GitHub Last Release Date](https://img.shields.io/github/release-date/smtp2graph/smtp2graph?style=for-the-badge)](https://github.com/SMTP2Graph/SMTP2Graph/releases)
@@ -12,7 +12,7 @@
 
 ## What is it
 
-SMTP2Graph is a SMTP server that will send messages over the Microsoft 365/Exchange Online platform. You don't need a userlicense for this, but you need to create an application registration in Entra ID (Azure AD) and assign it the desired permissions.
+SMTP2Graph is an SMTP server that will send messages over the Microsoft 365/Exchange Online platform. You don't need a userlicense for this, but you need to create an application registration in Entra ID (Azure AD) and assign it the desired permissions.
 
 ## Features
 

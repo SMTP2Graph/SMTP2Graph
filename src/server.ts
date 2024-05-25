@@ -26,3 +26,8 @@ else
         }
     })();
 }
+
+// Exit with code 0 on Ctrl+C
+process.on('SIGINT', ()=>{
+    process.exit(0);
+});

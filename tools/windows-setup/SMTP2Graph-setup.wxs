@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*"
+           Language="1033"
+           Manufacturer="SMTP2Graph"
+           Name="SMTP2Graph"
+           UpgradeCode="bacf3b6e-1df2-4e7f-80d8-a5abcfaa2974"
+           Version="$(var.Version)">
+
+    <Package InstallScope="perMachine" Compressed="yes" Platform="x64" InstallerVersion="200" />
+
+    <Icon Id="SMTP2Graph.ico" SourceFile="tools\SMTP2Graph.ico"/>
+    <Property Id="ARPPRODUCTICON" Value="SMTP2Graph.ico" />
+
+    <MajorUpgrade DowngradeErrorMessage="A later version of [ProductName] is already installed. Setup will now exit." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFiles64Folder">
+        <Directory Id="INSTALLFOLDER" Name="SMTP2Graph">
+          <Component Id="INSTALLFOLDER" Win64="yes" Guid="f906e6fd-32f2-4575-9b01-d3f994bb2511">
+            <CreateFolder />
+            <RemoveFile Id="PurgeInstallFolder" Name="*.*" On="uninstall" />
+          </Component>
+          <!-- Our main application -->
+          <Component Id="Server" Win64="yes">
+            <File KeyPath="yes" Source="dist/smtp2graph-win-x64.exe" Id="smtp2graph_win_x64" />
+          </Component>
+          <!-- shawl to run our application as a service -->
+          <Component Id="Service" Win64="yes" Guid="df7cc138-8f65-4803-afd4-9e93ef31b4be">
+            <File Source="tools/windows-setup/shawl.exe" />
+            <ServiceInstall
+              Id="smtp2graph"
+              Arguments="run --name smtp2graph --no-restart -- &quot;[#smtp2graph_win_x64]&quot; --baseDir=&quot;[CommonAppDataFolder]SMTP2Graph&quot;"
+              DisplayName="SMTP2Graph"
+              Name="smtp2graph"
+              ErrorControl="normal"
+              Start="auto"
+              Type="ownProcess"
+              Vital="yes"
+            />
+            <ServiceControl
+              Id="smtp2graph"
+              Name="smtp2graph"
+              Remove="uninstall"
+              Start="install"
+              Stop="both"
+            />
+          </Component>
+        </Directory>
+      </Directory>
+      <Directory Id="CommonAppDataFolder"> <!-- ProgramData folder -->
+        <Directory Id="APPDATA" Name="SMTP2Graph" />
+      </Directory>
+    </Directory>
+
+    <!-- The ProgramData contents -->
+    <ComponentGroup Directory="APPDATA" Id="ProgramDataComponentGroup">
+      <Component Id="exampleConfig">
+        <File Source="config.example.yml" />
+      </Component>
+    </ComponentGroup>
+
+    <Feature Id="MainFeature">
+      <ComponentGroupRef Id="ProgramDataComponentGroup" />
+      <ComponentRef Id="INSTALLFOLDER" Primary="yes"/>
+      <ComponentRef Id="Server" Primary="yes"/>
+      <ComponentRef Id="Service" Primary="yes"/>
+    </Feature>
+
+  </Product>
+
+</Wix>
