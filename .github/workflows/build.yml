@@ -67,6 +67,12 @@ jobs:
     with:
       fetchPackageJson: true
 
+  build-installer:
+    needs: [ build ]
+    uses: ./.github/workflows/build-windows-installer.yml
+    with:
+      fetchPackageJson: true
+
   test-win-x64:
     needs: [ build ]
     uses: ./.github/workflows/test-binary.yml
