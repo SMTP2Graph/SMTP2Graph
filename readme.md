@@ -8,7 +8,7 @@
 [![GitHub Repo stars](https://img.shields.io/github/stars/smtp2graph/smtp2graph?style=for-the-badge&logo=github&color=E3B341)](https://github.com/SMTP2Graph/SMTP2Graph/stargazers)
 
 ## Documentation
-[Full documentation](https://www.smtp2graph.com) | [Quick start](https://www.smtp2graph.com/#/quick-start)
+[Full documentation](https://www.smtp2graph.com) | [Installation](https://www.smtp2graph.com/#/installation)
 
 ## What is it
 
