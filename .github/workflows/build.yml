@@ -123,11 +123,23 @@ jobs:
           name: installer
           path: dist
 
+      - name: Create ZIP files
+        run: |
+          for file in dist/*; do
+              if [ -f "$file" ]; then
+                  zip "${file%.*}.zip" "$file"
+              fi
+          done
+
+          if [ -f "dist/server.zip" ]; then
+            mv "dist/server.zip" "dist/NodeJS.zip"
+          fi
+
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           name: v${{ inputs.version }}
           tag_name: v${{ inputs.version }}
           draft: true
-          files: dist/**
+          files: dist/*.zip
           fail_on_unmatched_files: true

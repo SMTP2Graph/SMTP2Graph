@@ -1,7 +1,7 @@
 import fs from 'fs';
 import readline from 'readline';
 import { Mutex, Semaphore } from 'async-mutex';
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse, isAxiosError } from 'axios';
 import { Base64Encode } from 'base64-stream';
 import addressparser from 'nodemailer/lib/addressparser';
 import { ConfidentialClientApplication } from '@azure/msal-node';
@@ -86,42 +86,31 @@ export class Mailer
     static async #retryableRequest<RequestData = any, ReponseData = any>(request: AxiosRequestConfig<RequestData>): Promise<AxiosResponse<RequestData, ReponseData>>
     {
         const retryLimit = 3;
-        let response: AxiosResponse<RequestData, ReponseData>|undefined;
         let retryCount = 0;
-        let lastError: Error|undefined;
         let wait = 200;
 
         const retry = async (): Promise<AxiosResponse<RequestData, ReponseData>> =>
         {
-            if(retryCount >= retryLimit) // We've reached our retry limit
-                throw lastError;
-            else
-                retryCount++;
-
-            // If we don't have a response yet, or status 429, 503 or 504 we can try the request (again)
-            if(typeof response === "undefined" || response?.status === 429 || response?.status === 503 || response?.status === 504)
-            {
-                if(typeof response !== 'undefined') // This is NOT our first try?
+            try {
+                return await axios(request);
+            } catch(error) {
+                if(++retryCount > retryLimit) // We've reached our retry limit?
+                    throw error;
+                else if(isAxiosError(error) && (error.response?.status === 429 || error.response?.status === 503 || error.response?.status === 504)) // We got a retryable response?
                 {
-                    const retryAfter = response.headers['Retry-After'];
+                    const retryAfter = error.response.headers['Retry-After'];
                     if(retryAfter && !isNaN(retryAfter)) // We got throttled
                         wait = parseInt(retryAfter) * 1000;
                     else
                         wait *= 2;
 
                     await this.#sleep(wait);
-                }
 
-                try {
-                    response = await axios(request);
-                    return response!;
-                } catch(error: any) {
-                    lastError = error;
                     return retry();
                 }
+                else // Unknown error response, throw the error
+                    throw error;
             }
-            else
-                return response;
         };
 
         return retry();
