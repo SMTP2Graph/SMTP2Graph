@@ -8,6 +8,10 @@ on:
         type: boolean
   workflow_dispatch:
 
+env:
+  TAG_PREFIX: smtp2graph/smtp2graph
+  TAG_SUFFIX_TEST: test
+
 jobs:
   publish-docker:
     runs-on: ubuntu-latest
@@ -39,20 +43,38 @@ jobs:
         with:
           file_path: package.json
 
-      - name: Build image
-        run: docker build --build-arg VERSION=${{ steps.manifest.outputs.version }} -t smtp2graph:latest .
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and export to Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          build-args: VERSION=${{ steps.manifest.outputs.version }}
+          tags: ${{ env.TAG_PREFIX }}:${{ env.TAG_SUFFIX_TEST }}
 
       - name: Test image
-        run: docker run -v .:/data --entrypoint /bin/test.sh smtp2graph:latest
+        run: docker run -v .:/data --entrypoint /bin/test.sh ${{ env.TAG_PREFIX }}:${{ env.TAG_SUFFIX_TEST }}
 
-      - name: Add additional tags
+      - name: Get major version number
+        id: majorversion
         run: |
-          docker image tag smtp2graph:latest smtp2graph/smtp2graph:latest
-          docker image tag smtp2graph:latest smtp2graph/smtp2graph:v${{ steps.manifest.outputs.version }}
-          major_version=$(echo "${{ steps.manifest.outputs.version }}" | cut -d'.' -f1)
-          docker image tag smtp2graph:latest smtp2graph/smtp2graph:v$major_version
+          echo major_version=$(echo "${{ steps.manifest.outputs.version }}" | cut -d'.' -f1) >> $GITHUB_OUTPUT
 
-      - name: Push image
-        run: |
-          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-          docker push --all-tags smtp2graph/smtp2graph
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ env.TAG_PREFIX}}:latest,${{ env.TAG_PREFIX}}:v${{ steps.manifest.outputs.version }},${{ env.TAG_PREFIX }}:v${{ steps.majorversion.outputs.major_version }}
