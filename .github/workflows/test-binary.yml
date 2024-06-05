@@ -20,6 +20,7 @@ on:
         options:
           - windows-latest
           - ubuntu-latest
+          - ubuntu-arm64
       binaryName:
         description: Name of the binary (located in dist folder)
         type: string

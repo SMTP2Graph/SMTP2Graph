@@ -9,6 +9,9 @@ on:
       commit:
         description: Commit the new version and create version tag
         type: boolean
+      skip-arm-test:
+        description: Skip ARM test
+        type: boolean
 
 jobs:
   prepare:
@@ -87,10 +90,18 @@ jobs:
       binaryName: smtp2graph-linux-x64
       platform: ubuntu-latest
 
+  test-linux-arm64:
+    if: ${{ ! inputs.skip-arm-test }}
+    needs: [ build ]
+    uses: ./.github/workflows/test-binary.yml
+    with:
+      binaryName: smtp2graph-linux-arm64
+      platform: ubuntu-arm64
+
   commit:
     if: ${{ inputs.version && inputs.commit }}
     runs-on: ubuntu-latest
-    needs: [test-win-x64, test-linux-x64]
+    needs: [test-win-x64, test-linux-x64, test-linux-arm64]
 
     permissions:
       contents: write
