@@ -8,6 +8,7 @@ const distNodeVersion = '20';
 const distributions: {platform: Platform, arch: Arch}[] = [
     {platform: 'win', arch: 'x64'},
     {platform: 'linux', arch: 'x64'},
+    {platform: 'linux', arch: 'arm64'},
 ];
 const outDir = 'dist';
 const binNamePrefix = 'smtp2graph';
