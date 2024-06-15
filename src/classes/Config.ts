@@ -172,7 +172,7 @@ export class Config
 
     static get smtpPort(): number
     {
-        return this.getConfigArg('receive.port', 'number') ?? this.#config.receive?.port ?? 25;
+        return this.#config.receive?.port ?? this.getConfigArg('receive.port', 'number') ?? 25;
     }
 
     static get smtpListenIp()
