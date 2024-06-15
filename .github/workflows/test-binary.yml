@@ -11,6 +11,9 @@ on:
         description: Name of the binary (located in dist folder)
         type: string
         required: true
+      useArch:
+        description: Run on different architecture
+        type: string
   workflow_dispatch:
     inputs:
       platform:
@@ -20,7 +23,6 @@ on:
         options:
           - windows-latest
           - ubuntu-latest
-          - ubuntu-arm64
       binaryName:
         description: Name of the binary (located in dist folder)
         type: string
@@ -52,7 +54,16 @@ jobs:
         if: runner.os == 'Linux'
         run: chmod +x ./dist/${{ inputs.binaryName }}
 
+      - name: Set up QEMU
+        if: ${{ inputs.useArch }}
+        uses: docker/setup-qemu-action@v3
+
+      - name: Run standard test on ${{ inputs.useArch || '(skipped)' }}
+        if: ${{ inputs.useArch }}
+        run: docker run --rm --platform linux/${{ inputs.useArch }} -v $PWD:/usr/src/app -w /usr/src/app node:20 npm run test:receive -- --serverFile=dist/${{ inputs.binaryName }} --reporter json --reporter-option output=test-results.json
+
       - name: Run standard tests
+        if: ${{ ! inputs.useArch }}
         run: npm run test:receive -- --serverFile=dist/${{ inputs.binaryName }} --reporter json --reporter-option output=test-results.json
 
       - name: Test report
