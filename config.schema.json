@@ -90,7 +90,7 @@
                     "properties": {
                         "tenant": {
                             "title": "Tenant name",
-                            "description": "The part that comes before .onmicrosoft.com",
+                            "description": "The part that comes before .onmicrosoft.com OR your tenantID (GUID)",
                             "type": "string"
                         },
                         "id": {

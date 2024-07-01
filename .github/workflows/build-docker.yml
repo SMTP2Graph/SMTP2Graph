@@ -77,4 +77,4 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ env.TAG_PREFIX}}:latest,${{ env.TAG_PREFIX}}:v${{ steps.manifest.outputs.version }},${{ env.TAG_PREFIX }}:v${{ steps.majorversion.outputs.major_version }}
+          tags: ${{ env.TAG_PREFIX}}:latest,${{ env.TAG_PREFIX }}:v${{ steps.majorversion.outputs.major_version }},${{ env.TAG_PREFIX}}:v${{ steps.manifest.outputs.version }}
