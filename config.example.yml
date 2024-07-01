@@ -12,7 +12,7 @@ mode: full
 # Required (in 'full' and 'send' mode): App. registration information
 send:
   appReg:
-    tenant: contoso # The name of the tenant (what comes before .onmicrosoft.com)
+    tenant: contoso # The name of the tenant (what comes before .onmicrosoft.com) OR your tenantID (GUID)
     id: 01234567-89ab-cdef-0123-456789abcdef
     certificate:
       thumbprint: 0123456789ABCDEF0123456789ABCDEF01234567

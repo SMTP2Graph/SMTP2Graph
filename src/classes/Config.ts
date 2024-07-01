@@ -124,6 +124,14 @@ export class Config
         return this.#config.mode.toLowerCase() as IConfig['mode'];
     }
 
+    static get msalAuthority()
+    {
+        if(/^[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}$/i.test(this.clientTenant || '')) // We got a GUID instead of name?
+            return `https://login.microsoftonline.com/${this.clientTenant}`;
+        else
+            return `https://login.microsoftonline.com/${this.clientTenant}.onmicrosoft.com`;
+    }
+
     static get clientTenant()
     {
         return this.#config.send?.appReg.tenant;

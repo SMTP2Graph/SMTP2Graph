@@ -20,7 +20,7 @@ export class Mailer
 
     static #msalClient = (Config.clientId && (Config.clientSecret || (Config.clientCertificateThumbprint && Config.clientCertificateKeyPath)))?new ConfidentialClientApplication({
         auth: {
-            authority: `https://login.microsoftonline.com/${Config.clientTenant}.onmicrosoft.com`,
+            authority: Config.msalAuthority,
             clientId: Config.clientId,
             clientSecret: Config.clientSecret,
             clientCertificate: Config.clientCertificateThumbprint && Config.clientCertificateKeyPath?{
