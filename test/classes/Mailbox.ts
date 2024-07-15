@@ -6,9 +6,10 @@ import { config } from '../_config';
 
 export class Mailbox
 {
+    static #tenantOrId = /^[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}$/i.test(config.clientTenant)?config.clientTenant:`${config.clientTenant}.onmicrosoft.com`;
     static #msalClient = new ConfidentialClientApplication({
         auth: {
-            authority: `https://login.microsoftonline.com/${config.clientTenant}.onmicrosoft.com`,
+            authority: `https://login.microsoftonline.com/${Mailbox.#tenantOrId}`,
             clientId: config.clientId,
             clientSecret: config.clientSecret,
         },

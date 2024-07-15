@@ -35,6 +35,7 @@
     "@types/base64-stream": "^1.0.5",
     "@types/chai": "^4.3.11",
     "@types/chai-as-promised": "^7.1.8",
+    "@types/http-proxy": "^1.17.14",
     "@types/mailparser": "^3.4.4",
     "@types/mocha": "^10.0.6",
     "@types/nodemailer": "^6.4.14",
@@ -43,6 +44,7 @@
     "chai": "^4.4.1",
     "chai-as-promised": "^7.1.1",
     "dotenv": "^16.3.2",
+    "http-proxy": "^1.18.1",
     "mailparser": "^3.6.6",
     "mocha": "^10.2.0",
     "rcedit": "^4.0.1",
@@ -54,7 +56,7 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "@azure/msal-node": "^2.6.1",
+    "@azure/msal-node": "^2.10.0",
     "async-mutex": "^0.4.0",
     "axios": "^1.6.5",
     "base64-stream": "^1.0.0",
