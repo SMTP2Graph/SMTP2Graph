@@ -1,6 +1,7 @@
 import fs from 'fs';
 import { parse as parseYaml } from 'yaml';
 import IPCIDR from 'ip-cidr';
+import { AxiosProxyConfig } from 'axios';
 
 // Set the working dir based on the --baseDir argument
 const baseDir = process.argv.find(arg=>arg.startsWith('--baseDir=') && arg.length > 10)?.substring(10);
@@ -63,6 +64,13 @@ export interface IConfig
             limit?: number;
         };
     },
+    httpProxy?: {
+        host: string,
+        port: number,
+        protocol?: 'http'|'https',
+        username?: string,
+        password?: string,
+    }
 }
 
 export class InvalidConfig extends Error { }
@@ -117,6 +125,16 @@ export class Config
             throw new InvalidConfig(`Property "receive.authLimit.duration" should be a number`);
         else if(this.smtpAuthLimitDuration && typeof this.smtpAuthLimitDuration !== 'number')
             throw new InvalidConfig(`Property "receive.authLimit.limit" should be a number`);
+        else if(this.#config.httpProxy && typeof this.#config.httpProxy.host !== 'string')
+            throw new InvalidConfig(`Property "httpProxy.host" should be a string`);
+        else if(this.#config.httpProxy && typeof this.#config.httpProxy.port !== 'number')
+            throw new InvalidConfig(`Property "httpProxy.port" should be a number`);
+        else if(this.#config.httpProxy?.protocol && !['http','https'].includes(this.#config.httpProxy.protocol))
+            throw new InvalidConfig(`Property "httpProxy.protocol" should be a http or https`);
+        else if(this.#config.httpProxy?.username && !this.#config.httpProxy.password)
+            throw new InvalidConfig(`Property "httpProxy.username" is defined without "httpProxy.password"`);
+        else if(this.#config.httpProxy?.password && !this.#config.httpProxy.username)
+            throw new InvalidConfig(`Property "httpProxy.password" is defined without "httpProxy.username"`);
     }
 
     static get mode()
@@ -274,6 +292,47 @@ export class Config
     static get smtpAuthLimitLimit()
     {
         return this.#config.receive?.authLimit?.limit ?? 10;
+    }
+
+    static get httpProxyHost()
+    {
+        return this.#config.httpProxy?.host;
+    }
+
+    static get httpProxyPort()
+    {
+        return this.#config.httpProxy?.port;
+    }
+
+    static get httpProxyProtocol(): Required<Required<IConfig>['httpProxy']>['protocol']
+    {
+        return this.#config.httpProxy?.protocol ?? 'http';
+    }
+
+    static get httpProxyUsername()
+    {
+        return this.#config.httpProxy?.username;
+    }
+
+    static get httpProxyPassword()
+    {
+        return this.#config.httpProxy?.username;
+    }
+
+    static get httpProxyConfig(): AxiosProxyConfig | undefined
+    {
+        if(this.httpProxyHost && this.httpProxyPort)
+        {
+            return {
+                host: Config.httpProxyHost!,
+                port: Config.httpProxyPort!,
+                protocol: Config.httpProxyProtocol,
+                auth: (Config.httpProxyUsername && Config.httpProxyPassword)?{
+                    username: Config.httpProxyUsername,
+                    password: Config.httpProxyPassword,
+                }:undefined,
+            };
+        }
     }
 
     /** Check if an IP address is allowed to connect */

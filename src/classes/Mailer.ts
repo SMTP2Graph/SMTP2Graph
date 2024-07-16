@@ -7,6 +7,7 @@ import addressparser from 'nodemailer/lib/addressparser';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import { Config } from './Config';
 import { UnrecoverableError } from './Constants';
+import { MsalProxy } from './MsalProxy';
 
 export class MailboxAccessDenied extends UnrecoverableError { }
 export class InvalidMailContent extends UnrecoverableError { }
@@ -28,6 +29,7 @@ export class Mailer
                 privateKey: Config.clientCertificateKey!,
             }:undefined,
         },
+        system: Config.httpProxyConfig?{networkClient: new MsalProxy()}:undefined, // We use our custom implementation, because the `proxyUrl` property doesn't want to work
     }):undefined;
 
     static async sendEml(filePath: string)
@@ -57,6 +59,8 @@ export class Mailer
                         'Content-Type': 'text/plain',
                         'User-Agent': `SMPT2Graph/${VERSION}`,
                     },
+                    timeout: 10000,
+                    proxy: Config.httpProxyConfig,
                 });
             } catch(error: any) {
                 if('response' in error && (error as AxiosError).response?.data)

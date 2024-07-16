@@ -285,6 +285,40 @@
                     }
                 }
             }
+        },
+        "httpProxy": {
+            "title": "Use HTTP proxy",
+            "type": "object",
+            "required": [
+                "host",
+                "port"
+            ],
+            "properties": {
+                "host": {
+                    "title": "Hostname or IP for the proxy",
+                    "type": "string"
+                },
+                "port": {
+                    "title": "Proxy port",
+                    "type": "integer"
+                },
+                "protocol": {
+                    "title": "http or https (default: http)",
+                    "type": "string",
+                    "oneOf": [
+                        {"const": "http"},
+                        {"const": "https"}
+                    ]
+                },
+                "username": {
+                    "title": "Username for proxy authentication",
+                    "type": "string"
+                },
+                "password": {
+                    "title": "Password for proxy authentication",
+                    "type": "string"
+                }
+            }
         }
 	}
 }

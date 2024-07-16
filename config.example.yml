@@ -74,3 +74,11 @@ receive:
   authLimit:
     duration: 30 # Time period in seconds (default: 60 = 1 minute)
     limit: 5 # Maximum number of attempts in the time period (default: 10)
+
+# Optional: HTTP proxy to use for outgoing communication
+httpProxy: 
+  host: localhost # Hostname or IP for the proxy
+  port: 3000 # Proxy port
+  protocol: https # Optional: http or https (default: http)
+  username: user # Optional: Username for proxy authentication
+  password: pass # Optional: Password for proxy authentication
