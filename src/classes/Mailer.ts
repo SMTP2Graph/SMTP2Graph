@@ -8,6 +8,8 @@ import { ConfidentialClientApplication } from '@azure/msal-node';
 import { Config } from './Config';
 import { UnrecoverableError } from './Constants';
 import { MsalProxy } from './MsalProxy';
+import { simpleParser } from 'mailparser';
+import { JsonMailSchema, MetaData } from './types';
 
 export class MailboxAccessDenied extends UnrecoverableError { }
 export class InvalidMailContent extends UnrecoverableError { }
@@ -57,6 +59,113 @@ export class Mailer
                     headers: {
                         Authorization: `Bearer ${token}`,
                         'Content-Type': 'text/plain',
+                        'User-Agent': `SMPT2Graph/${VERSION}`,
+                    },
+                    timeout: 10000,
+                    proxy: Config.httpProxyConfig,
+                });
+            } catch(error: any) {
+                if('response' in error && (error as AxiosError).response?.data)
+                {
+                    const data = (error as AxiosError).response?.data as any;
+                    if('error' in data && 'code' in data.error)
+                    {
+                        if(data.error.code === 'ErrorAccessDenied')
+                            throw new MailboxAccessDenied(`Access to mailbox "${sender}" denied`);
+                        else if(data.error.code === 'ErrorMimeContentInvalidBase64String')
+                            throw new InvalidMailContent(`Invalid content for mail "${filePath}"`);
+                        else
+                            throw new Error(JSON.stringify(data.error));
+                    }
+                    else
+                        throw data;
+                }
+                else
+                    throw error;
+            } finally {
+                readStream.destroy();
+            }
+        });
+    }
+
+    static async sendJson(filePath: string, meta: MetaData)
+    {
+        return this.#sendSemaphore.runExclusive(async ()=>{
+            // Determine the sender
+            let sender = Config.forceMailbox;
+
+            const parsedEmail = await simpleParser(fs.readFileSync(filePath));
+
+            if(!sender) // There's no forced sender in the config, so we get it from the mail data
+            {
+                const senderAddress = parsedEmail.from?.value[0].address;
+                if(!senderAddress) throw new UnrecoverableError('No sender/from address defined');
+                sender = senderAddress;
+            }
+
+            const recipients = (parsedEmail.to === undefined ? [] : Array.isArray(parsedEmail.to) ? parsedEmail.to : [parsedEmail.to]).map((recipient) => recipient.text);
+            const ccs = (parsedEmail.cc === undefined ? [] : Array.isArray(parsedEmail.cc) ? parsedEmail.cc : [parsedEmail.cc]).map((recipient) => recipient.text);
+
+            let payload = {
+                message: {
+                    subject: parsedEmail.subject,
+                    body: {
+                        contentType: 'HTML',
+                        content: parsedEmail.html || parsedEmail.text,
+                    },
+                    from: {
+                        emailAddress: {
+                            address: sender,
+                        }
+                    },
+                    toRecipients: recipients.map((to) => {
+                        return {
+                            emailAddress: {
+                                address: to,
+                            },
+                        };
+                    }),
+                    ccRecipients: ccs.map((to) => {
+                        return {
+                            emailAddress: {
+                                address: to,
+                            },
+                        };
+                    }),
+                    bccRecipients: meta.allRecipients.filter(email => !recipients.includes(email)).map((to) => {
+                        return {
+                            emailAddress: {
+                                address: to,
+                            },
+                        };
+                    }),
+                },
+            } as JsonMailSchema;
+
+            if (parsedEmail.attachments.length > 0) {
+                payload.message.attachments = parsedEmail.attachments.map((attachment) => {
+                    return {
+                        "@odata.type": "#microsoft.graph.fileAttachment",
+                        name: attachment.filename!,
+                        contentBytes: attachment.content.toString('base64'),
+                        contentType: attachment.contentType,
+                    };
+                });
+            }
+
+            // Fetch an accesstoken if needed
+            const token = await this.#aquireToken();
+
+            // Send the message
+            const readStream = fs.createReadStream(filePath);
+            try {
+                await this.#retryableRequest({
+                    method: 'post',
+                    url: `https://graph.microsoft.com/v1.0/users/${sender}/sendMail`,
+                    data: payload,
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
                         'User-Agent': `SMPT2Graph/${VERSION}`,
                     },
                     timeout: 10000,

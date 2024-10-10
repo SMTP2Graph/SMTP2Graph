@@ -6,6 +6,7 @@ import { Mailer } from './Mailer';
 import { prefixedLog } from './Logger';
 import { Config } from './Config';
 import { UnrecoverableError } from './Constants';
+import { MetaData } from './types';
 
 const log = prefixedLog('MailQueue');
 
@@ -59,9 +60,16 @@ export class MailQueue
     {
         const filename = path.basename(filePath);
         log('verbose', `File "${filename}" appeared in the queue`);
-        
+
+        const meta = JSON.parse(fs.readFileSync(path.join(this.#queuePath, `${filename}_meta.json`)).toString()) as MetaData;
+
         try {
-            await Mailer.sendEml(filePath);
+            if (Config.sendMode === 'eml') {
+                await Mailer.sendEml(filePath);
+            } else if (Config.sendMode === 'json') {
+                await Mailer.sendJson(filePath, meta);
+            }
+
             this.remove(filePath);
             this.#removeFromRetryQueue(filename);
         } catch(error) {
@@ -132,11 +140,12 @@ export class MailQueue
         });
     }
 
-    add(filePath: string)
+    add(filePath: string, meta: MetaData)
     {
         const filename = path.basename(filePath);
         try {
             fs.renameSync(filePath, path.join(this.#queuePath, filename));
+            fs.writeFileSync(path.join(this.#queuePath, `${filename}_meta.json`), JSON.stringify(meta));
             log('verbose', `Moved file "${filename}" to queue`);
         } catch(error) {
             log('error', `Error while moving "${filename}" to queue`, {error});

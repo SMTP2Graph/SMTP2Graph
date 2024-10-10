@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { SMTPServer as NodeSMTP, SMTPServerOptions } from 'smtp-server';
+import { SMTPServer as NodeSMTP, SMTPServerAddress, SMTPServerOptions } from 'smtp-server';
 import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
 import MailComposer from 'nodemailer/lib/mail-composer';
 import { Config } from './Config';
@@ -22,6 +22,8 @@ export class SMTPServer
         points: Config.smtpAuthLimitLimit,
     });
 
+    #allRecipients = new Set<SMTPServerAddress>();
+
     constructor(queue: MailQueue)
     {
         this.#queue = queue;
@@ -29,6 +31,7 @@ export class SMTPServer
             onConnect: this.#onConnect,
             onAuth: this.#onAuth,
             onMailFrom: this.#onMailFrom,
+            onRcptTo: this.#onRcptTo,
             onData: this.#onData,
             authOptional: !Config.smtpRequireAuth,
             banner: Config.smtpBanner ?? `SMTP2Graph ${VERSION}`,
@@ -93,11 +96,18 @@ export class SMTPServer
             callback(new Error(`FROM "${address.address}" not allowed`));
     };
 
+    #onRcptTo: SMTPServerOptions['onRcptTo'] = (address, session, callback)=>
+    {
+        this.#allRecipients.add(address);
+        callback();
+    };
+
     #onData: SMTPServerOptions['onData'] = (stream, session, callback)=>
     {
         if(!session.envelope.mailFrom)
         {
             callback(new Error('Missing FROM'));
+            this.#allRecipients.clear();
             return;
         }
 
@@ -123,15 +133,19 @@ export class SMTPServer
                 writeStream.close(()=>{
                     fs.unlinkSync(tmpFile);
                 });
+                this.#allRecipients.clear();
             }
             else
             {
                 callback();
                 writeStream.close(()=>{
-                    this.#queue.add(tmpFile);
+                    this.#queue.add(tmpFile, {
+                        allRecipients: Array.from(this.#allRecipients).map(r => r.address),
+                    });
+                    this.#allRecipients.clear();
                 });
             }
         });
     };
-    
+
 }

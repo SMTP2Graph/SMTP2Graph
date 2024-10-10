@@ -11,6 +11,7 @@ export interface IConfig
 {
     mode: 'full'|'receive'|'send';
     send?: {
+        mode: 'eml'|'json'; // json send mode supports bcc
         appReg: {
             /** The tenant name (the part that comes before .onmicrosoft.com) */
             tenant: string,
@@ -100,7 +101,7 @@ export class Config
             else if(!isStringValue(this.clientTenant))
                 throw new InvalidConfig('Missing "appReg.tenant" property');
         }
-        
+
         if(this.sendRetryInterval !== undefined && this.sendRetryInterval < 1)
             throw new InvalidConfig('"retryInterval" may not be smaller than 1');
         else if(this.smtpRequireAuth && !this.smtpUsers?.length)
@@ -140,6 +141,11 @@ export class Config
     static get mode()
     {
         return this.#config.mode.toLowerCase() as IConfig['mode'];
+    }
+
+    static get sendMode()
+    {
+        return this.#config.send?.mode || 'eml';
     }
 
     static get msalAuthority()
@@ -405,7 +411,7 @@ export class Config
     {
         key = key.toLowerCase();
         const arg = process.argv.find(f=>f.toLowerCase().startsWith(`--${key}`));
-        
+
         const value: string|undefined = arg?.split('=')[1];
         if(value === undefined) return undefined;
 

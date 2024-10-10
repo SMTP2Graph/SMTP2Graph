@@ -44,12 +44,12 @@ export function log(level: 'verbose'|'info'|'warn'|'error', msg: string, meta?: 
     }
 
     return new Promise<void>((resolve, reject)=>{
-        logger.log(level, msg, meta, (err)=>{
+        logger.log(level, msg, meta, (err: any)=>{
             if(err)
                 console.error('An error occured while logging!', err);
             else if(DEBUG && meta)
                 console.error(meta); // Output metadata when in DEBUG mode
-            
+
             resolve();
         });
     });
