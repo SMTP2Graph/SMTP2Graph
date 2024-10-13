@@ -62,6 +62,7 @@
     "base64-stream": "^1.0.0",
     "chokidar": "^3.5.3",
     "ip-cidr": "^4.0.0",
+    "mailsplit": "^5.4.0",
     "nodemailer": "^6.9.8",
     "rate-limiter-flexible": "^4.0.0",
     "smtp-server": "^3.13.0",
