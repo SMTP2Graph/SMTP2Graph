@@ -3,6 +3,9 @@ import path from 'path';
 import { SMTPServer as NodeSMTP, SMTPServerOptions } from 'smtp-server';
 import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
 import MailComposer from 'nodemailer/lib/mail-composer';
+import addressparser, { Address } from 'nodemailer/lib/addressparser';
+const Splitter = require('mailsplit').Splitter;
+const Joiner = require('mailsplit').Joiner;
 import { Config } from './Config';
 import { prefixedLog } from './Logger';
 import { MailQueue } from './MailQueue';
@@ -103,18 +106,40 @@ export class SMTPServer
 
         const mail = new MailComposer({
             messageId: session.id,
-            envelope: {
-                from: session.envelope.mailFrom.address,
-                to: session.envelope.rcptTo.map(r=>r.address),
-            },
             raw: stream,
         });
 
+        // Inject BCC header if necessary
+        const envelope = {...session.envelope}; // We need a copy, because the envelope object will get overwritten while parsing
+        const splitter = new Splitter();
+        splitter.on('data', (data: any)=>{
+            if(data.type === 'node')
+            {
+                try {
+                    if(!data.headers.hasHeader('Bcc')) // We don't have a BCC header?
+                    {
+                        // Collect all TO and CC recipients
+                        const visibleRecipients: Address[] = [];
+                        if(data.headers.hasHeader('To')) visibleRecipients.push(...addressparser(data.headers.get('To'), {flatten: true}));
+                        if(data.headers.hasHeader('Cc')) visibleRecipients.push(...addressparser(data.headers.get('Cc'), {flatten: true}));
+
+                        // Check if there are recipients missing from TO/CC, in that case we add them as BCC
+                        const bcc = envelope.rcptTo.filter(rcpt=>!visibleRecipients.some(visible=>visible.address.toLowerCase()===rcpt.address.toLowerCase()));
+                        if(bcc.length) data.headers.add('Bcc', bcc.map(r=>r.address).join(', '));
+                    }
+                } catch(error) {
+                    log('error', `Failed to inject BCC header`, {error});
+                }
+            }
+        });
+
+        // Create the EML file
         const tmpFile = path.join(this.#queue.tempPath, `${session.id}.eml`);
         const writeStream = fs.createWriteStream(tmpFile);
-        const mailStream = mail.compile().createReadStream();
-        mailStream.pipe(writeStream);
-        mailStream.on('end', ()=>{
+        const mailCompile = mail.compile();
+        (mailCompile as any).keepBcc = true;
+        mailCompile.createReadStream().pipe(splitter).pipe(new Joiner()).pipe(writeStream);
+        writeStream.on('finish', ()=>{
             if(stream.sizeExceeded)
             {
                 const err = new Error('Message exceeds fixed maximum message size');

@@ -53,6 +53,7 @@ export async function verifyMail(mail: Required<ISubmitMail>['mail'], send: SMTP
     if(mail.from) expect(received.from?.value.map(v=>v.address), 'From address not present').to.include(mail.from);
     if(mail.to) expect(parseMailAddresses(mail.to), 'To addresses do not match').to.have.members(parseParsedMailAddresses(received.to || []));
     if(mail.cc) expect(parseMailAddresses(mail.cc), 'CC addresses do not match').to.have.members(parseParsedMailAddresses(received.cc || []));
+    if(mail.bcc) expect(parseMailAddresses(mail.bcc), 'BCC addresses do not match').to.have.members(parseParsedMailAddresses(received.bcc || []));
     if(mail.replyTo) expect(parseMailAddresses(mail.replyTo), 'ReplyTo addresses do not match').to.have.members(parseParsedMailAddresses(received.replyTo || []));
 
     // Contents

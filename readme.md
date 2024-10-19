@@ -6,6 +6,7 @@
 [![GitHub Last Release Date](https://img.shields.io/github/release-date/smtp2graph/smtp2graph?style=for-the-badge)](https://github.com/SMTP2Graph/SMTP2Graph/releases)
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/smtp2graph?style=for-the-badge&logo=githubsponsors)](https://github.com/sponsors/SMTP2Graph)
 [![GitHub Repo stars](https://img.shields.io/github/stars/smtp2graph/smtp2graph?style=for-the-badge&logo=github&color=E3B341)](https://github.com/SMTP2Graph/SMTP2Graph/stargazers)
+[![Docker pulls](https://img.shields.io/docker/pulls/smtp2graph/smtp2graph?style=for-the-badge&logo=docker)](https://hub.docker.com/r/smtp2graph/smtp2graph)
 
 ## Documentation
 [Full documentation](https://www.smtp2graph.com) | [Installation](https://www.smtp2graph.com/#/installation)

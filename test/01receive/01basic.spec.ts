@@ -61,6 +61,16 @@ describe('Receive: Basic', async function(){
         });
     });
 
+    it('BCC recipients', async function(){
+        await submitAndVerifyMail({
+            mail: {
+                cc: ['cc1@example.com','cc3@example.com'],
+                bcc: ['bcc1@example.com','bcc2@example.com'],
+                subject: `TEST: ${this.test?.title}`,
+            },
+        });
+    });
+
     it('Reply-To address', async function(){
         await submitAndVerifyMail({
             mail: {

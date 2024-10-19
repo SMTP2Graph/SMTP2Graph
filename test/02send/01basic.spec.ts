@@ -53,7 +53,18 @@ describe('Send: Basic', async function(){
     it('CC recipients', async function(){
         await submitAndVerifyMail({
             mail: {
+                to: [],
                 cc: [config.mailbox, config.additionalRecipient],
+                subject: `TEST: ${this.test?.title}`,
+            },
+        });
+    });
+
+    it('BCC recipients', async function(){
+        await submitAndVerifyMail({
+            mail: {
+                to: [],
+                bcc: [config.mailbox],
                 subject: `TEST: ${this.test?.title}`,
             },
         });
