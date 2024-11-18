@@ -115,6 +115,15 @@ export class SMTPServer
         splitter.on('data', (data: any)=>{
             if(data.type === 'node')
             {
+                // Inject from header if needed
+                try {
+                    if(!data.headers.hasHeader('From') && envelope.mailFrom)
+                        data.headers.add('From', envelope.mailFrom.address);
+                } catch(error) {
+                    log('error', `Failed to inject from header`, {error});
+                }
+
+                // Inject bcc header if needed
                 try {
                     if(!data.headers.hasHeader('Bcc')) // We don't have a BCC header?
                     {
