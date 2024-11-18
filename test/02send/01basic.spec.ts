@@ -1,7 +1,11 @@
 import { expect } from 'chai';
+import { Message } from '@microsoft/microsoft-graph-types';
+import Mail from 'nodemailer/lib/mailer';
 import { config } from '../_config';
 import { Server } from '../classes/Server';
-import { submitAndVerifyMail } from './Helpers';
+import LowLevelSMTPClient from '../classes/LowLevelSMTPClient';
+import { defaultTransportOptions } from '../01receive/Helpers';
+import { defaultMail, submitAndVerifyMail, verifyMail, waitForMessage } from './Helpers';
 
 describe('Send: Basic', async function(){
     const server = new Server({
@@ -77,6 +81,21 @@ describe('Send: Basic', async function(){
                 subject: `TEST: ${this.test?.title}`,
             },
         });
+    });
+
+    it('No From/To/Cc headers', async function(){
+        const client = new LowLevelSMTPClient(defaultTransportOptions.host!, defaultTransportOptions.port!);
+
+        const mail: Mail.Options = {
+            ...defaultMail,
+            subject: `TEST: ${this.test?.title}`,
+        };
+
+        const messageId: string = await expect(client.sendMail(defaultMail.from as string, defaultMail.to as string, {Subject: mail.subject!}, defaultMail.text as string), 'Failed to send message').to.eventually.be.fulfilled;
+        const received: Message = await expect(waitForMessage(messageId), 'No message was send').to.eventually.be.fulfilled;
+
+        delete mail.to; // We don't expect a To header
+        await verifyMail(mail, messageId, received);
     });
 
 });

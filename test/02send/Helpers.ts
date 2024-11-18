@@ -24,7 +24,7 @@ export const defaultMail: Mail.Options = {
 export async function submitAndVerifyMail(submitProps: ISubmitMail)
 {
     const { props, send, received } = await submitMail(submitProps);
-    await verifyMail(props.mail!, send, received);
+    await verifyMail(props.mail!, send.messageId, received);
 
     return {props, send, received};
 }
@@ -40,9 +40,9 @@ export async function submitMail(props: ISubmitMail)
     return {props, send, received};
 }
 
-export async function verifyMail(mail: Required<ISubmitMail>['mail'], send: SMTPTransport.SentMessageInfo, received: Message)
+export async function verifyMail(mail: Required<ISubmitMail>['mail'], messageId: string, received: Message)
 {
-    expect(received.internetMessageId, 'Message-Id from queued file doesn\'t match submitted message').to.equal(send.messageId);
+    expect(received.internetMessageId, 'Message-Id from queued file doesn\'t match submitted message').to.equal(messageId);
     
     // Addresses
     if(mail.from) expect(received.from?.emailAddress?.address, 'From address not present').to.equal(mail.from);
@@ -86,7 +86,7 @@ export async function verifyMail(mail: Required<ISubmitMail>['mail'], send: SMTP
     }
 }
 
-async function waitForMessage(msgId: string)
+export async function waitForMessage(msgId: string)
 {
     for(let i=0; i<15; i++)
     {
