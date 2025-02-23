@@ -1,7 +1,7 @@
 import fs from 'fs';
 import readline from 'readline';
 import { Mutex, Semaphore } from 'async-mutex';
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse, isAxiosError } from 'axios';
+import axios, { AxiosRequestConfig, AxiosResponse, isAxiosError } from 'axios';
 import { Base64Encode } from 'base64-stream';
 import addressparser from 'nodemailer/lib/addressparser';
 import { ConfidentialClientApplication } from '@azure/msal-node';
@@ -11,6 +11,7 @@ import { MsalProxy } from './MsalProxy';
 
 export class MailboxAccessDenied extends UnrecoverableError { }
 export class InvalidMailContent extends UnrecoverableError { }
+export class MessageSizeExceeded extends UnrecoverableError { }
 
 export class Mailer
 {
@@ -59,19 +60,20 @@ export class Mailer
                         'Content-Type': 'text/plain',
                         'User-Agent': `SMPT2Graph/${VERSION}`,
                     },
-                    timeout: 10000,
                     proxy: Config.httpProxyConfig,
                 });
             } catch(error: any) {
-                if('response' in error && (error as AxiosError).response?.data)
+                if(isAxiosError(error) && error.response?.data)
                 {
-                    const data = (error as AxiosError).response?.data as any;
+                    const data = error.response?.data;
                     if('error' in data && 'code' in data.error)
                     {
                         if(data.error.code === 'ErrorAccessDenied')
                             throw new MailboxAccessDenied(`Access to mailbox "${sender}" denied`);
                         else if(data.error.code === 'ErrorMimeContentInvalidBase64String')
                             throw new InvalidMailContent(`Invalid content for mail "${filePath}"`);
+                        else if(data.error.code === 'ErrorMessageSizeExceeded')
+                            throw new MessageSizeExceeded(`The message exceeds the maximum supported size for mail "${filePath}"`);
                         else
                             throw new Error(JSON.stringify(data.error));
                     }
@@ -95,8 +97,18 @@ export class Mailer
 
         const retry = async (): Promise<AxiosResponse<RequestData, ReponseData>> =>
         {
+            const abortController = new AbortController();
+            const connectTimeout = setTimeout(()=>abortController.abort(`Server did not respond within 10 seconds`), 10000);
+            const overallTimeout = setTimeout(()=>abortController.abort(`Failed to send message within 120 seconds`), 120000);
+
             try {
-                return await axios(request);
+                return await axios({
+                    ...request,
+                    signal: abortController.signal,
+                    onUploadProgress: progress=>{
+                        clearTimeout(connectTimeout);
+                    },
+                });
             } catch(error) {
                 if(++retryCount > retryLimit) // We've reached our retry limit?
                     throw error;
@@ -112,8 +124,13 @@ export class Mailer
 
                     return retry();
                 }
+                else if(axios.isCancel(error) && abortController.signal.aborted)
+                    throw abortController.signal.reason;
                 else // Unknown error response, throw the error
                     throw error;
+            } finally {
+                clearTimeout(connectTimeout);
+                clearTimeout(overallTimeout);
             }
         };
 
