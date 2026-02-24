@@ -148,23 +148,34 @@ export class SMTPServer
         const mailCompile = mail.compile();
         (mailCompile as any).keepBcc = true;
         mailCompile.createReadStream().pipe(splitter).pipe(new Joiner()).pipe(writeStream);
-        writeStream.on('finish', ()=>{
+
+        // Windows can keep a handle open for a short time even after 'finish' fires.
+        // the rename that occurs in MailQueue.add must wait until the underlying
+        // file descriptor is closed, which is signalled by the 'close' event.
+        writeStream.on('close', () => {
             if(stream.sizeExceeded)
             {
                 const err = new Error('Message exceeds fixed maximum message size');
                 (<any>err).responseCode = 552;
                 callback(err);
-                writeStream.close(()=>{
+
+                try {
                     fs.unlinkSync(tmpFile);
-                });
+                } catch {
+                    // ignore, it may already be removed by cleanup logic
+                }
             }
             else
             {
                 callback();
-                writeStream.close(()=>{
-                    this.#queue.add(tmpFile);
-                });
+                this.#queue.add(tmpFile);
             }
+        });
+
+        // ensure the stream is ended when the mail compiles (pipe will do this for us,
+        // but explictly listening for 'finish' lets us log/debug if needed)
+        writeStream.on('finish', ()=>{
+            log('verbose', 'EML write finished, waiting for close');
         });
     };
     

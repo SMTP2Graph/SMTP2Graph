@@ -135,12 +135,26 @@ export class MailQueue
     add(filePath: string)
     {
         const filename = path.basename(filePath);
-        try {
-            fs.renameSync(filePath, path.join(this.#queuePath, filename));
-            log('verbose', `Moved file "${filename}" to queue`);
-        } catch(error) {
-            log('error', `Error while moving "${filename}" to queue`, {error});
-        }
+        const dest = path.join(this.#queuePath, filename);
+
+        const attempt = (tries = 0) => {
+            try {
+                fs.renameSync(filePath, dest);
+                log('verbose', `Moved file "${filename}" to queue`);
+            } catch(error: any) {
+                // On Windows the file may still be locked for a brief moment after
+                // the stream closes.  Instead of failing permanently we retry a few
+                // times with a small backoff.
+                if(error.code === 'EPERM' && process.platform === 'win32' && tries < 5) {
+                    log('warn', `EPERM renaming "${filename}", retrying`, {tries});
+                    setTimeout(() => attempt(tries + 1), 100);
+                } else {
+                    log('error', `Error while moving "${filename}" to queue`, {error, filename});
+                }
+            }
+        };
+
+        attempt();
     }
 
     remove(filePath: string)
