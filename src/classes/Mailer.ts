@@ -5,6 +5,7 @@ import axios, { AxiosRequestConfig, AxiosResponse, isAxiosError } from 'axios';
 import { Base64Encode } from 'base64-stream';
 import addressparser from 'nodemailer/lib/addressparser';
 import { ConfidentialClientApplication } from '@azure/msal-node';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 import { Config } from './Config';
 import { UnrecoverableError } from './Constants';
 import { MsalProxy } from './MsalProxy';
@@ -51,6 +52,14 @@ export class Mailer
             // Send the message
             const readStream = fs.createReadStream(filePath);
             try {
+                let proxyAgent: HttpsProxyAgent<`${string}://${string}${string}:${number}`> | undefined;
+                if(Config.httpProxyConfig)
+                {
+                    const { protocol, host, port, auth } = Config.httpProxyConfig;
+                    const authPart = auth ? `${encodeURIComponent(auth.username)}:${encodeURIComponent(auth.password)}@` : '';
+                    proxyAgent = new HttpsProxyAgent(`${protocol}://${authPart}${host}:${port}`);
+                }
+
                 await this.#retryableRequest({
                     method: 'post',
                     url: `https://graph.microsoft.com/v1.0/users/${sender}/sendMail`,
@@ -60,7 +69,9 @@ export class Mailer
                         'Content-Type': 'text/plain',
                         'User-Agent': `SMPT2Graph/${VERSION}`,
                     },
-                    proxy: Config.httpProxyConfig,
+                    httpsAgent: proxyAgent,
+                    httpAgent: proxyAgent,
+                    proxy: false,
                 });
             } catch(error: any) {
                 if(isAxiosError(error) && error.response?.data)
