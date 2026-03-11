@@ -61,7 +61,6 @@
     "axios": "^1.6.5",
     "base64-stream": "^1.0.0",
     "chokidar": "^3.5.3",
-    "https-proxy-agent": "^7.0.6",
     "ip-cidr": "^4.0.0",
     "mailsplit": "^5.4.0",
     "nodemailer": "^6.9.8",

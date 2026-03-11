@@ -1,5 +1,4 @@
 import { INetworkModule, NetworkRequestOptions, NetworkResponse } from "@azure/msal-node";
-import { HttpsProxyAgent } from 'https-proxy-agent';
 import axios, { AxiosRequestConfig } from "axios";
 import { Config } from "./Config";
 
@@ -15,22 +14,14 @@ export class MsalProxy implements INetworkModule
         return this.#sendRequestAsync(url, 'POST', options);
     }
 
-    async #sendRequestAsync<T>(url: string, method: 'GET' | 'POST', options: NetworkRequestOptions = {}): Promise<NetworkResponse<T>> {
-        let proxyAgent: HttpsProxyAgent<`${string}://${string}${string}:${number}`> | undefined;
-        if (Config.httpProxyConfig) {
-            const { protocol, host, port, auth } = Config.httpProxyConfig;
-            const authPart = auth ? `${encodeURIComponent(auth.username)}:${encodeURIComponent(auth.password)}@` : '';
-            proxyAgent = new HttpsProxyAgent(`${protocol}://${authPart}${host}:${port}`);
-        }
-
+    async #sendRequestAsync<T>(url: string, method: 'GET' | 'POST', options: NetworkRequestOptions = {}): Promise<NetworkResponse<T>>
+    {
         const requestConfig: AxiosRequestConfig = {
             url,
             method: method,
             headers: options.headers,
             data: options.body,
-            httpsAgent: proxyAgent,
-            httpAgent: proxyAgent,
-            proxy: false,
+            proxy: Config.httpProxyConfig,
         };
 
         const response = await axios(requestConfig);
