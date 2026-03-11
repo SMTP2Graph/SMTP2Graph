@@ -16,7 +16,7 @@ export class MsalProxy implements INetworkModule
     }
 
     async #sendRequestAsync<T>(url: string, method: 'GET' | 'POST', options: NetworkRequestOptions = {}): Promise<NetworkResponse<T>> {
-        let proxyAgent: HttpsProxyAgent | undefined;
+        let proxyAgent: HttpsProxyAgent<`${string}://${string}${string}:${number}`> | undefined;
         if (Config.httpProxyConfig) {
             const { protocol, host, port, auth } = Config.httpProxyConfig;
             const authPart = auth ? `${encodeURIComponent(auth.username)}:${encodeURIComponent(auth.password)}@` : '';

@@ -52,7 +52,7 @@ export class Mailer
             // Send the message
             const readStream = fs.createReadStream(filePath);
             try {
-                let proxyAgent: HttpsProxyAgent | undefined;
+                let proxyAgent: HttpsProxyAgent<`${string}://${string}${string}:${number}`> | undefined;
                 if(Config.httpProxyConfig)
                 {
                     const { protocol, host, port, auth } = Config.httpProxyConfig;
