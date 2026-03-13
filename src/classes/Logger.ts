@@ -83,14 +83,14 @@ export function log(
     meta.error = meta.error.message;
   }
 
-  return new Promise<void>((resolve, reject) => {
-    logger.log(level, msg, meta, (err) => {
-      if (err) console.error('An error occured while logging!', err);
-      else if (DEBUG && meta) console.error(meta); // Output metadata when in DEBUG mode
+  try {
+    logger.log(level, msg, meta);
+    if (DEBUG && meta) console.error(meta); // Output metadata when in DEBUG mode
+  } catch (err) {
+    console.error('An error occured while logging!', err);
+  }
 
-      resolve();
-    });
-  });
+  return Promise.resolve();
 }
 
 /** Create a `log()` function, but prefix the `msg` with `[prefix] ` */
