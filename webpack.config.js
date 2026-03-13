@@ -27,6 +27,10 @@ module.exports = (env, argv) => ({
             VERSION: JSON.stringify(require("./package.json").version),
             DEBUG: (argv.mode!=='production'),
         }),
+        // chokidar optionally depends on macOS-native fsevents; ignore it to avoid bundling .node binaries
+        new webpack.IgnorePlugin({
+            resourceRegExp: /^fsevents$/,
+        }),
     ],
     devtool: argv.mode==='production'?undefined:'inline-source-map',
     performance: {
