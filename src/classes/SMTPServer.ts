@@ -103,6 +103,15 @@ export class SMTPServer
             callback(new Error('Missing FROM'));
             return;
         }
+        const sender = session.envelope.mailFrom.address;
+        const recipientCount = session.envelope.rcptTo.length;
+        let attachmentCount = 0;
+        let attachmentTotalSize = 0;
+        let attachmentMetricsErrorLogged = false;
+        log(
+        'verbose',
+        `Receiving message from "${sender}" to ${recipientCount} recipient${recipientCount === 1 ? '' : 's'}`,
+        );
 
         const mail = new MailComposer({
             messageId: session.id,
@@ -113,8 +122,32 @@ export class SMTPServer
         const envelope = {...session.envelope}; // We need a copy, because the envelope object will get overwritten while parsing
         const splitter = new Splitter();
         splitter.on('data', (data: any)=>{
-            if(data.type === 'node')
-            {
+      try {
+        if (
+           (data.type === 'node') &&
+          (data.disposition === 'attachment' || Boolean(data.filename))
+        ) {
+          attachmentCount++;
+        }
+
+        if (
+          data?.type === 'body' &&
+          (data.node?.disposition === 'attachment' ||
+            Boolean(data.node?.filename))
+        ) {
+          if (Buffer.isBuffer(data.value))
+            attachmentTotalSize += data.value.length;
+          else if (typeof data.value === 'string')
+            attachmentTotalSize += Buffer.byteLength(data.value);
+        }
+      } catch (error) {
+        if (!attachmentMetricsErrorLogged) {
+          attachmentMetricsErrorLogged = true;
+          log('error', 'Failed to process attachment metrics', { error });
+        }
+      }
+
+      if (data.type === 'node') {
                 // Inject from header if needed
                 try {
                     if(!data.headers.hasHeader('From') && envelope.mailFrom)
@@ -165,8 +198,8 @@ export class SMTPServer
                     // ignore, it may already be removed by cleanup logic
                 }
             }
-            else
-            {
+            else {
+        log('verbose',`Received message from "${sender}" to ${recipientCount} recipient${recipientCount === 1 ? '' : 's'} with ${attachmentCount} attachment${attachmentCount === 1 ? '' : 's'} totaling ${attachmentTotalSize} bytes`);
                 callback();
                 this.#queue.add(tmpFile);
             }
