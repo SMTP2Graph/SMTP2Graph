@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMTP2Graph Control Panel</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <div class="desktop">
+        <div class="window" id="main-window">
+            <div class="title-bar">
+                <span class="title-bar-text">SMTP2Graph Control Panel</span>
+                <div class="title-bar-controls">
+                    <button class="title-btn minimize-btn"></button>
+                    <button class="title-btn maximize-btn"></button>
+                    <button class="title-btn close-btn"></button>
+                </div>
+            </div>
+
+            <div class="menu-bar">
+                <span class="menu-item">File</span>
+                <span class="menu-item">View</span>
+                <span class="menu-item">Help</span>
+            </div>
+
+            <div class="tab-bar">
+                <button class="tab active" data-tab="dashboard">System Monitor</button>
+                <button class="tab" data-tab="accounts">Network Accounts</button>
+                <button class="tab" data-tab="config">System Properties</button>
+            </div>
+
+            <div class="tab-content" id="tab-dashboard">
+                <div class="panel-row">
+                    <div class="group-box" id="smtp-status">
+                        <legend>SMTP Server Status</legend>
+                        <div class="status-row">
+                            <span class="status-icon" id="smtp-icon">&#9679;</span>
+                            <span id="smtp-status-text">Checking...</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Port:</span> <span id="smtp-port">&mdash;</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Mode:</span> <span id="smtp-mode">&mdash;</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Uptime:</span> <span id="smtp-uptime">&mdash;</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Version:</span> <span id="smtp-version">&mdash;</span>
+                        </div>
+                    </div>
+
+                    <div class="group-box" id="queue-status">
+                        <legend>Mail Queue</legend>
+                        <div class="detail-row">
+                            <span>Queued:</span> <span id="queue-queued">&mdash;</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Retrying:</span> <span id="queue-retrying">&mdash;</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>Failed:</span> <span id="queue-failed">&mdash;</span>
+                        </div>
+                        <div class="detail-row">
+                            <span>In progress:</span> <span id="queue-temp">&mdash;</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="group-box" id="accounts-health">
+                    <legend>Relay Account Health</legend>
+                    <div id="account-cards" class="account-cards">
+                        <p class="placeholder">Loading...</p>
+                    </div>
+                </div>
+
+                <div class="group-box" id="log-viewer">
+                    <legend>Recent Activity</legend>
+                    <div class="log-area" id="log-area">
+                        <pre id="log-content">Loading logs...</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content hidden" id="tab-accounts">
+                <div class="toolbar">
+                    <button class="btn" id="btn-add-account">Add Account</button>
+                    <button class="btn" id="btn-refresh-accounts">Refresh</button>
+                </div>
+
+                <div class="listview" id="accounts-list">
+                    <div class="listview-header">
+                        <span class="col-name">Name</span>
+                        <span class="col-tenant">Tenant</span>
+                        <span class="col-auth">Auth</span>
+                        <span class="col-ips">Allowed IPs</span>
+                        <span class="col-from">Allowed From</span>
+                        <span class="col-actions">Actions</span>
+                    </div>
+                    <div id="accounts-rows" class="listview-body">
+                        <p class="placeholder">Loading...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content hidden" id="tab-config">
+                <div class="toolbar">
+                    <button class="btn" id="btn-save-config">Save</button>
+                    <button class="btn" id="btn-reload-config">Reload</button>
+                </div>
+                <div id="restart-banner" class="alert-banner hidden">
+                    &#9888; Configuration changed. Restart SMTP2Graph for changes to take effect.
+                </div>
+                <div id="config-form" class="config-form">
+                    <p class="placeholder">Loading configuration...</p>
+                </div>
+            </div>
+
+            <div class="status-bar">
+                <span id="statusbar-text">Ready</span>
+                <span id="statusbar-time"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Edit Dialog -->
+    <div class="dialog-overlay hidden" id="account-dialog-overlay">
+        <div class="window dialog" id="account-dialog">
+            <div class="title-bar">
+                <span class="title-bar-text" id="dialog-title">Add Relay Account</span>
+                <div class="title-bar-controls">
+                    <button class="title-btn close-btn" id="dialog-close"></button>
+                </div>
+            </div>
+            <div class="dialog-body">
+                <div class="form-group">
+                    <label>Account Name:</label>
+                    <input type="text" id="acct-name" class="field">
+                </div>
+                <div class="form-group">
+                    <label>Tenant:</label>
+                    <input type="text" id="acct-tenant" class="field" placeholder="contoso or GUID">
+                </div>
+                <div class="form-group">
+                    <label>Client ID:</label>
+                    <input type="text" id="acct-client-id" class="field">
+                </div>
+                <div class="form-group">
+                    <label>Client Secret:</label>
+                    <input type="password" id="acct-secret" class="field" placeholder="Leave blank for certificate auth">
+                </div>
+                <div class="form-group">
+                    <label>Certificate Thumbprint:</label>
+                    <input type="text" id="acct-cert-thumbprint" class="field">
+                </div>
+                <div class="form-group">
+                    <label>Private Key Path:</label>
+                    <input type="text" id="acct-cert-key-path" class="field">
+                </div>
+                <div class="form-group">
+                    <label>Allowed IPs (one per line):</label>
+                    <textarea id="acct-allowed-ips" class="field" rows="4" placeholder="10.0.1.0/24&#10;192.168.1.50"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Allowed FROM Addresses (one per line):</label>
+                    <textarea id="acct-allowed-from" class="field" rows="4" placeholder="noreply@contoso.com&#10;alerts@contoso.com"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Force Mailbox (optional):</label>
+                    <input type="text" id="acct-force-mailbox" class="field">
+                </div>
+                <div class="form-row">
+                    <div class="form-group half">
+                        <label>Retry Limit:</label>
+                        <input type="number" id="acct-retry-limit" class="field" value="3">
+                    </div>
+                    <div class="form-group half">
+                        <label>Retry Interval (min):</label>
+                        <input type="number" id="acct-retry-interval" class="field" value="5">
+                    </div>
+                </div>
+                <div class="dialog-buttons">
+                    <button class="btn" id="btn-dialog-save">OK</button>
+                    <button class="btn" id="btn-dialog-cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Dialog -->
+    <div class="dialog-overlay hidden" id="alert-dialog-overlay">
+        <div class="window dialog dialog-sm" id="alert-dialog">
+            <div class="title-bar">
+                <span class="title-bar-text" id="alert-title">SMTP2Graph</span>
+                <div class="title-bar-controls">
+                    <button class="title-btn close-btn" id="alert-close"></button>
+                </div>
+            </div>
+            <div class="dialog-body">
+                <p id="alert-message"></p>
+                <div class="dialog-buttons">
+                    <button class="btn" id="alert-ok">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>

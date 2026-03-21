@@ -31,6 +31,14 @@
                 }
             },
             "required": ["send"]
+        },
+        {
+            "properties": {
+                "mode": {
+                    "const": "full"
+                }
+            },
+            "required": ["accounts"]
         }
     ],
     "definitions": {
@@ -283,6 +291,112 @@
                             "type": "integer"
                         }
                     }
+                }
+            }
+        },
+        "accounts": {
+            "title": "Relay accounts",
+            "description": "Multiple relay accounts with per-account app registrations, IP whitelists, and sender restrictions",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["name", "appReg"],
+                "properties": {
+                    "name": {
+                        "title": "Account name",
+                        "description": "Human-readable label for this relay account",
+                        "type": "string"
+                    },
+                    "appReg": {
+                        "title": "Entra ID application registration",
+                        "type": "object",
+                        "required": ["tenant", "id"],
+                        "oneOf": [
+                            {"required": ["secret"]},
+                            {"required": ["certificate"]}
+                        ],
+                        "properties": {
+                            "tenant": {
+                                "title": "Tenant name or GUID",
+                                "type": "string"
+                            },
+                            "id": {
+                                "title": "Client ID",
+                                "type": "string"
+                            },
+                            "secret": {
+                                "title": "Client secret",
+                                "type": "string"
+                            },
+                            "certificate": {
+                                "title": "Client certificate",
+                                "type": "object",
+                                "required": ["thumbprint", "privateKeyPath"],
+                                "properties": {
+                                    "thumbprint": {"type": "string"},
+                                    "privateKeyPath": {"type": "string"}
+                                }
+                            }
+                        }
+                    },
+                    "allowedIPs": {
+                        "title": "Allowed sender IPs",
+                        "description": "IP addresses or CIDR ranges allowed to relay through this account",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "anyOf": [
+                                {"$ref": "#/definitions/ipaddress"},
+                                {"$ref": "#/definitions/ipCIDR"}
+                            ]
+                        }
+                    },
+                    "allowedFrom": {
+                        "allOf": [{"$ref": "#/definitions/emailArray"}],
+                        "title": "Allowed FROM addresses"
+                    },
+                    "forceMailbox": {
+                        "title": "Force sender mailbox",
+                        "type": "string"
+                    },
+                    "retryLimit": {
+                        "title": "Retry limit",
+                        "description": "Times to retry sending (0 = disable, default: 3)",
+                        "type": "integer"
+                    },
+                    "retryInterval": {
+                        "title": "Retry interval (minutes)",
+                        "description": "Default: 5",
+                        "type": "integer"
+                    }
+                }
+            }
+        },
+        "webui": {
+            "title": "WebUI configuration",
+            "type": "object",
+            "properties": {
+                "enabled": {
+                    "title": "Enable WebUI",
+                    "type": "boolean"
+                },
+                "port": {
+                    "title": "WebUI port",
+                    "description": "Default: 3000",
+                    "type": "integer"
+                },
+                "listenAddress": {
+                    "$ref": "#/definitions/ipaddress",
+                    "title": "WebUI listen address",
+                    "description": "Default: 0.0.0.0"
+                },
+                "username": {
+                    "title": "WebUI username",
+                    "type": "string"
+                },
+                "password": {
+                    "title": "WebUI password",
+                    "type": "string"
                 }
             }
         },

@@ -75,8 +75,47 @@ receive:
     duration: 30 # Time period in seconds (default: 60 = 1 minute)
     limit: 5 # Maximum number of attempts in the time period (default: 10)
 
+# Optional: Multiple relay accounts (replaces 'send' section when defined)
+# Each account has its own app registration, IP whitelist, and sender restrictions.
+# This works like IIS6 SMTP virtual servers — one SMTP2Graph instance, multiple tenants.
+# accounts:
+#   - name: contoso-relay
+#     appReg:
+#       tenant: contoso
+#       id: 01234567-89ab-cdef-0123-456789abcdef
+#       certificate:
+#         thumbprint: 0123456789ABCDEF0123456789ABCDEF01234567
+#         privateKeyPath: contoso-client.key
+#     allowedIPs:
+#       - 10.0.1.0/24
+#       - 192.168.1.50
+#     allowedFrom:
+#       - noreply@contoso.com
+#       - alerts@contoso.com
+#     forceMailbox: smtp-relay@contoso.com
+#     retryLimit: 3
+#     retryInterval: 5
+#
+#   - name: fabrikam-relay
+#     appReg:
+#       tenant: fabrikam
+#       id: fedcba98-7654-3210-fedc-ba9876543210
+#       secret: VGhpcyBpcyB2ZXJ5IHNlY3JldCE=
+#     allowedIPs:
+#       - 10.0.2.0/24
+#     allowedFrom:
+#       - notifications@fabrikam.com
+
+# Optional: WebUI for configuration management and health monitoring
+# webui:
+#   enabled: true
+#   port: 3000
+#   listenAddress: 127.0.0.1  # Use 0.0.0.0 for Docker or remote access
+#   username: admin
+#   password: changeme
+
 # Optional: HTTP proxy to use for outgoing communication
-httpProxy: 
+httpProxy:
   host: localhost # Hostname or IP for the proxy
   port: 3000 # Proxy port
   protocol: https # Optional: http or https (default: http)

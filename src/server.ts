@@ -24,6 +24,19 @@ else
             log('error', `Failed to start SMTP server. ${String(error)}`, {error});
             process.exit(1);
         }
+
+        // Start WebUI if enabled
+        if(Config.webuiEnabled)
+        {
+            try {
+                const { WebServer } = await import('./webui/WebServer');
+                const webServer = new WebServer(queue, server);
+                await webServer.listen();
+            } catch(error) {
+                log('error', `Failed to start WebUI. ${String(error)}`, {error});
+                // Don't exit — SMTP relay still works without WebUI
+            }
+        }
     })();
 }
 

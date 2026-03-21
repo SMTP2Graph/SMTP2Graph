@@ -7,9 +7,42 @@ import { AxiosProxyConfig } from 'axios';
 const baseDir = process.argv.find(arg=>arg.startsWith('--baseDir=') && arg.length > 10)?.substring(10);
 if(baseDir) process.chdir(baseDir);
 
+export interface IAccount
+{
+    /** Human-readable name for this relay account (used in WebUI and logs) */
+    name: string;
+    appReg: {
+        tenant: string;
+        id: string;
+        secret?: string;
+        certificate?: {
+            thumbprint: string;
+            privateKeyPath: string;
+        };
+    };
+    /** IP addresses/CIDRs allowed to relay through this account */
+    allowedIPs?: string[];
+    /** FROM addresses this account can send as */
+    allowedFrom?: string[];
+    /** Always send from this mailbox (overrides FROM header) */
+    forceMailbox?: string;
+    /** Times to retry sending a message when it failed (0 = disable, default: 3) */
+    retryLimit?: number;
+    /** Minutes between retry attempts (default: 5) */
+    retryInterval?: number;
+}
+
 export interface IConfig
 {
     mode: 'full'|'receive'|'send';
+    accounts?: IAccount[];
+    webui?: {
+        enabled?: boolean;
+        port?: number;
+        listenAddress?: string;
+        username: string;
+        password: string;
+    };
     send?: {
         appReg: {
             /** The tenant name (the part that comes before .onmicrosoft.com) */
@@ -89,7 +122,25 @@ export class Config
         if(typeof this.mode !== 'string' || !['full','receive','send'].includes(this.mode))
             throw new InvalidConfig('Invalid "mode" config property');
 
-        if(this.mode !== 'receive') // We're also sending?
+        if(this.#config.accounts?.length)
+        {
+            for(const account of this.#config.accounts)
+            {
+                if(!isStringValue(account.name))
+                    throw new InvalidConfig('Each account must have a "name" property');
+                if(!isStringValue(account.appReg?.id))
+                    throw new InvalidConfig(`Account "${account.name}": missing "appReg.id"`);
+                if(!isStringValue(account.appReg?.secret) && !isStringValue(account.appReg?.certificate?.thumbprint))
+                    throw new InvalidConfig(`Account "${account.name}": missing "appReg.secret" or "appReg.certificate"`);
+                if(!isStringValue(account.appReg?.tenant))
+                    throw new InvalidConfig(`Account "${account.name}": missing "appReg.tenant"`);
+                if(account.appReg?.certificate?.privateKeyPath && !fs.existsSync(account.appReg.certificate.privateKeyPath))
+                    throw new InvalidConfig(`Account "${account.name}": key file "${account.appReg.certificate.privateKeyPath}" not found`);
+                if(account.retryInterval !== undefined && account.retryInterval < 1)
+                    throw new InvalidConfig(`Account "${account.name}": retryInterval must be >= 1`);
+            }
+        }
+        else if(this.mode !== 'receive') // Legacy single-account validation
         {
             if(!isStringValue(this.clientId))
                 throw new InvalidConfig('Missing "appReg.id" property');
@@ -99,6 +150,14 @@ export class Config
                 throw new InvalidConfig(`Client key file "${this.clientCertificateKeyPath}" could not be found`);
             else if(!isStringValue(this.clientTenant))
                 throw new InvalidConfig('Missing "appReg.tenant" property');
+        }
+
+        if(this.webuiEnabled)
+        {
+            if(!isStringValue(this.webuiUsername) || !isStringValue(this.webuiPassword))
+                throw new InvalidConfig('WebUI requires "webui.username" and "webui.password" when enabled');
+            if(this.#config.webui?.listenAddress && !IPCIDR.isValidAddress(this.#config.webui.listenAddress))
+                throw new InvalidConfig('WebUI "listenAddress" is not a valid IP address');
         }
         
         if(this.sendRetryInterval !== undefined && this.sendRetryInterval < 1)
@@ -135,6 +194,109 @@ export class Config
             throw new InvalidConfig(`Property "httpProxy.username" is defined without "httpProxy.password"`);
         else if(this.#config.httpProxy?.password && !this.#config.httpProxy.username)
             throw new InvalidConfig(`Property "httpProxy.password" is defined without "httpProxy.username"`);
+    }
+
+    /** Get all configured relay accounts. Falls back to legacy single-account config. */
+    static get accounts(): IAccount[]
+    {
+        if(this.#config.accounts?.length)
+            return this.#config.accounts;
+
+        // Backward compatibility: synthesize single account from legacy send config
+        if(this.#config.send?.appReg)
+        {
+            return [{
+                name: 'default',
+                appReg: this.#config.send.appReg,
+                forceMailbox: this.#config.send.forceMailbox,
+                retryLimit: this.#config.send.retryLimit,
+                retryInterval: this.#config.send.retryInterval,
+                // Legacy mode: use global ipWhitelist and allowedFrom
+                allowedIPs: this.#config.receive?.ipWhitelist,
+                allowedFrom: this.#config.receive?.allowedFrom,
+            }];
+        }
+
+        return [];
+    }
+
+    /** Find the first account that matches the given client IP and FROM address */
+    static findAccountForSender(clientIp: string, fromAddress: string): IAccount | undefined
+    {
+        for(const account of this.accounts)
+        {
+            // Check IP whitelist
+            if(account.allowedIPs?.length)
+            {
+                let ipAllowed = false;
+                for(const allowed of account.allowedIPs)
+                {
+                    if(IPCIDR.isValidCIDR(allowed))
+                    {
+                        if(new IPCIDR(allowed).contains(clientIp))
+                        {
+                            ipAllowed = true;
+                            break;
+                        }
+                    }
+                    else if(allowed === clientIp)
+                    {
+                        ipAllowed = true;
+                        break;
+                    }
+                }
+                if(!ipAllowed) continue;
+            }
+
+            // Check FROM address whitelist
+            if(account.allowedFrom?.length)
+            {
+                if(!account.allowedFrom.some(a => a.toLowerCase() === fromAddress.toLowerCase()))
+                    continue;
+            }
+
+            return account;
+        }
+
+        return undefined;
+    }
+
+    /** Check if an IP matches ANY account's allowedIPs */
+    static isIpAllowedByAnyAccount(clientIp: string): boolean
+    {
+        return this.accounts.some(account => {
+            if(!account.allowedIPs?.length) return true; // No IP restriction = all allowed
+            return account.allowedIPs.some(allowed => {
+                if(IPCIDR.isValidCIDR(allowed))
+                    return new IPCIDR(allowed).contains(clientIp);
+                return allowed === clientIp;
+            });
+        });
+    }
+
+    static get webuiEnabled(): boolean
+    {
+        return Boolean(this.#config.webui?.enabled);
+    }
+
+    static get webuiPort(): number
+    {
+        return this.#config.webui?.port ?? 3000;
+    }
+
+    static get webuiListenAddress(): string
+    {
+        return this.#config.webui?.listenAddress ?? '0.0.0.0';
+    }
+
+    static get webuiUsername(): string | undefined
+    {
+        return this.#config.webui?.username;
+    }
+
+    static get webuiPassword(): string | undefined
+    {
+        return this.#config.webui?.password;
     }
 
     static get mode()

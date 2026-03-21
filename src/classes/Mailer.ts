@@ -5,7 +5,7 @@ import axios, { AxiosRequestConfig, AxiosResponse, isAxiosError } from 'axios';
 import { Base64Encode } from 'base64-stream';
 import addressparser from 'nodemailer/lib/addressparser';
 import { ConfidentialClientApplication } from '@azure/msal-node';
-import { Config } from './Config';
+import { Config, IAccount } from './Config';
 import { UnrecoverableError } from './Constants';
 import { MsalProxy } from './MsalProxy';
 
@@ -20,24 +20,46 @@ export class Mailer
     /** Prevent sending more than 4 messages in parallel (see: https://learn.microsoft.com/en-us/graph/throttling-limits#outlook-service-limits) */
     static #sendSemaphore = new Semaphore(4);
 
-    static #msalClient = (Config.clientId && (Config.clientSecret || (Config.clientCertificateThumbprint && Config.clientCertificateKeyPath)))?new ConfidentialClientApplication({
-        auth: {
-            authority: Config.msalAuthority,
-            clientId: Config.clientId,
-            clientSecret: Config.clientSecret,
-            clientCertificate: Config.clientCertificateThumbprint && Config.clientCertificateKeyPath?{
-                thumbprint: Config.clientCertificateThumbprint,
-                privateKey: Config.clientCertificateKey!,
-            }:undefined,
-        },
-        system: Config.httpProxyConfig?{networkClient: new MsalProxy()}:undefined, // We use our custom implementation, because the `proxyUrl` property doesn't want to work
-    }):undefined;
+    static #msalClients = new Map<string, ConfidentialClientApplication>();
 
-    static async sendEml(filePath: string)
+    static #getClient(account: IAccount): ConfidentialClientApplication
+    {
+        let client = this.#msalClients.get(account.name);
+        if(!client)
+        {
+            const certKeyPath = account.appReg.certificate?.privateKeyPath;
+            const certKey = certKeyPath && fs.existsSync(certKeyPath)
+                ? fs.readFileSync(certKeyPath).toString()
+                : undefined;
+
+            const tenantId = account.appReg.tenant;
+            const authority = /^[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}$/i.test(tenantId)
+                ? `https://login.microsoftonline.com/${tenantId}`
+                : `https://login.microsoftonline.com/${tenantId}.onmicrosoft.com`;
+
+            client = new ConfidentialClientApplication({
+                auth: {
+                    authority,
+                    clientId: account.appReg.id,
+                    clientSecret: account.appReg.secret,
+                    clientCertificate: account.appReg.certificate ? {
+                        thumbprint: account.appReg.certificate.thumbprint,
+                        privateKey: certKey!,
+                    } : undefined,
+                },
+                system: Config.httpProxyConfig ? {networkClient: new MsalProxy()} : undefined,
+            });
+
+            this.#msalClients.set(account.name, client);
+        }
+        return client;
+    }
+
+    static async sendEml(filePath: string, account: IAccount)
     {
         return this.#sendSemaphore.runExclusive(async ()=>{
             // Determine the sender
-            let sender = Config.forceMailbox;
+            let sender = account.forceMailbox;
             if(!sender) // There's no forced sender in the config, so we get it from the mail data
             {
                 const senderObj = await this.#findSender(filePath);
@@ -46,7 +68,7 @@ export class Mailer
             }
 
             // Fetch an accesstoken if needed
-            const token = await this.#aquireToken();
+            const token = await this.#aquireToken(account);
 
             // Send the message
             const readStream = fs.createReadStream(filePath);
@@ -169,16 +191,26 @@ export class Mailer
         readStream.destroy();
     }
 
-    static async #aquireToken(): Promise<string>
+    static async #aquireToken(account: IAccount): Promise<string>
     {
         return this.#aquireTokenMutex.runExclusive(async ()=>{
-            if(!this.#msalClient) throw new UnrecoverableError('Trying to login without an application registration');
-
-            const res = await this.#msalClient.acquireTokenByClientCredential({
+            const client = this.#getClient(account);
+            const res = await client.acquireTokenByClientCredential({
                 scopes: ['https://graph.microsoft.com/.default'],
             });
             return res?.accessToken!;
         });
+    }
+
+    /** Test if we can acquire a token for the given account (used by health dashboard) */
+    static async testConnection(account: IAccount): Promise<{ok: boolean, error?: string}>
+    {
+        try {
+            await this.#aquireToken(account);
+            return {ok: true};
+        } catch(error: any) {
+            return {ok: false, error: String(error)};
+        }
     }
 
 }

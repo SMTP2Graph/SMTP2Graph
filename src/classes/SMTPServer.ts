@@ -60,18 +60,31 @@ export class SMTPServer
         });
     }
 
+    get isListening(): boolean
+    {
+        return this.#server.server.listening;
+    }
+
     #onConnect: SMTPServerOptions['onConnect'] = (session, callback)=>
     {
-        if(Config.isIpAllowed(session.remoteAddress))
+        if(!Config.isIpAllowed(session.remoteAddress))
         {
-            this.#rateLimiter.consume('all').then((rateLimit)=>{
-                callback();
-            }).catch((rateLimit: RateLimiterRes)=>{
-                callback(new Error(`Rate limit exceeded. Try again in ${Math.ceil(rateLimit.msBeforeNext/1000)} seconds`));
-            });
-        }
-        else
             callback(new Error(`IP ${session.remoteAddress} is not allowed to connect`));
+            return;
+        }
+
+        // Multi-account check: does any account accept this IP?
+        if(Config.accounts.length > 0 && !Config.isIpAllowedByAnyAccount(session.remoteAddress))
+        {
+            callback(new Error(`IP ${session.remoteAddress} has no relay account configured`));
+            return;
+        }
+
+        this.#rateLimiter.consume('all').then(()=>{
+            callback();
+        }).catch((rateLimit: RateLimiterRes)=>{
+            callback(new Error(`Rate limit exceeded. Try again in ${Math.ceil(rateLimit.msBeforeNext/1000)} seconds`));
+        });
     };
 
     #onAuth: SMTPServerOptions['onAuth'] = (auth, session, callback)=>
@@ -90,10 +103,26 @@ export class SMTPServer
 
     #onMailFrom: SMTPServerOptions['onMailFrom'] = (address, session, callback)=>
     {
-        if(Config.isFromAllowed(address.address, session.user))
-            callback();
-        else
+        if(!Config.isFromAllowed(address.address, session.user))
+        {
             callback(new Error(`FROM "${address.address}" not allowed`));
+            return;
+        }
+
+        // Multi-account routing: find matching account
+        if(Config.accounts.length > 0)
+        {
+            const account = Config.findAccountForSender(session.remoteAddress, address.address);
+            if(!account)
+            {
+                callback(new Error(`No relay account configured for "${address.address}" from IP ${session.remoteAddress}`));
+                return;
+            }
+            (session as any).matchedAccount = account;
+            log('verbose', `Matched account "${account.name}" for ${address.address} from ${session.remoteAddress}`);
+        }
+
+        callback();
     };
 
     #onData: SMTPServerOptions['onData'] = (stream, session, callback)=>
@@ -167,6 +196,23 @@ export class SMTPServer
             }
             else
             {
+                // Write sidecar metadata file for multi-account routing
+                const matchedAccount = (session as any).matchedAccount;
+                if(matchedAccount)
+                {
+                    const metaFile = tmpFile.replace(/\.eml$/, '.meta.json');
+                    try {
+                        fs.writeFileSync(metaFile, JSON.stringify({
+                            accountName: matchedAccount.name,
+                            clientIp: session.remoteAddress,
+                            fromAddress: session.envelope.mailFrom?.address,
+                            timestamp: new Date().toISOString(),
+                        }));
+                    } catch(error) {
+                        log('error', `Failed to write metadata file`, {error});
+                    }
+                }
+
                 callback();
                 this.#queue.add(tmpFile);
             }

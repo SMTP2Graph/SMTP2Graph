@@ -31,6 +31,7 @@
   },
   "homepage": "https://github.com/SMTP2Graph/SMTP2Graph#readme",
   "devDependencies": {
+    "@types/express": "^5.0.0",
     "@microsoft/microsoft-graph-types": "^2.40.0",
     "@types/base64-stream": "^1.0.5",
     "@types/chai": "^4.3.11",
@@ -56,6 +57,8 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
+    "ajv": "^8.17.0",
+    "express": "^4.21.0",
     "@azure/msal-node": "^2.10.0",
     "async-mutex": "^0.4.0",
     "axios": "^1.6.5",
