@@ -25,6 +25,23 @@ SMTP2Graph is an SMTP server that will send messages over the Microsoft 365/Exch
 - Brute force protection
 - No issues with SPF/DKIM/DMARC (it's handled by M365)
 
+## Logging
+
+SMTP2Graph writes logs to the `logs` folder:
+
+- `error.log` (errors only)
+- `combined.log` (info and above)
+- `exceptions.log` (uncaught exceptions)
+
+You can override the runtime log level with the `LOG_LEVEL` environment variable:
+
+- `error`
+- `warn`
+- `info`
+- `verbose`
+
+Default log level is `verbose` for development builds and `info` for production builds.
+
 ## Support the project
 
 If you like this project, please consider supporting its development.

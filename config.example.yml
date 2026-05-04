@@ -3,6 +3,10 @@
 # (you might need to install an extension in your IDE for this)
 # yaml-language-server: $schema=https://raw.githubusercontent.com/SMTP2Graph/SMTP2Graph/main/config.schema.json
 
+# Optional environment variable:
+# LOG_LEVEL=error|warn|info|verbose
+# Default is verbose in development builds and info in production builds
+
 # Optional: operation mode (default = full)
 # full = Run SMTP server and relay emails to the Graph API
 # receive = Only run SMTP server and place received emails in queue (do not send them)
