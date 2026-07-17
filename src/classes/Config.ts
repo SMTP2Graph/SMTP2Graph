@@ -10,6 +10,8 @@ if(baseDir) process.chdir(baseDir);
 export interface IConfig
 {
     mode: 'full'|'receive'|'send';
+    /** Path where log files are written */
+    logDir?: string;
     send?: {
         appReg: {
             /** The tenant name (the part that comes before .onmicrosoft.com) */
@@ -88,6 +90,8 @@ export class Config
 
         if(typeof this.mode !== 'string' || !['full','receive','send'].includes(this.mode))
             throw new InvalidConfig('Invalid "mode" config property');
+        else if(this.#config.logDir !== undefined && !isStringValue(this.#config.logDir))
+            throw new InvalidConfig('"logDir" property should be a string');
 
         if(this.mode !== 'receive') // We're also sending?
         {
@@ -194,6 +198,11 @@ export class Config
     static get forceMailbox()
     {
         return this.#config.send?.forceMailbox;
+    }
+
+    static get logDir()
+    {
+        return this.#config.logDir || 'logs';
     }
 
     static get smtpPort(): number

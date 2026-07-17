@@ -9,6 +9,9 @@
 # send = Only send items from the queue folder, but do not run the SMTP server to accept emails
 mode: full
 
+# Optional: Path where log files are written (default: logs)
+# logDir: /var/log/smtp2graph
+
 # Required (in 'full' and 'send' mode): App. registration information
 send:
   appReg:
