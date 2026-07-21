@@ -38,6 +38,6 @@ describe('Receive: TLS', async function(){
         await expect(submitAndVerifyMail({transportOptions: {
             secure: true,
             ignoreTLS: false,
-        }})).to.eventually.be.rejectedWith(/SSL routines:ssl3_get_record:wrong version number/);
+        }})).to.eventually.be.rejectedWith(/SSL routines:(?:ssl3_get_record|tls_validate_record_header):wrong version number/);
     });
 });
