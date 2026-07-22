@@ -14,17 +14,20 @@ export class LowLevelSMTPClient
         headers['Message-ID'] ??= randomUUID().toString();
 
         const socket = await this.#connect();
-        await this.#read(socket); // Wait for hello from server
-        await this.#writeRead(socket, `HELO ${this.server}\r\n`);
-        await this.#writeRead(socket, `MAIL FROM: <${from}>\r\n`);
-        await this.#writeRead(socket, `RCPT TO: <${rcptTo}>\r\n`);
-        await this.#writeRead(socket, `DATA\r\n`);
-        for(const [key, val] of Object.entries(headers))
-            socket.write(`${key}: ${val}\r\n`);
-        await this.#writeRead(socket, `\r\n${data}\r\n.\r\n`);
-        socket.destroy();
+        try {
+            await this.#read(socket); // Wait for hello from server
+            await this.#writeRead(socket, `HELO ${this.server}\r\n`);
+            await this.#writeRead(socket, `MAIL FROM: <${from}>\r\n`);
+            await this.#writeRead(socket, `RCPT TO: <${rcptTo}>\r\n`);
+            await this.#writeRead(socket, `DATA\r\n`);
+            for(const [key, val] of Object.entries(headers))
+                socket.write(`${key}: ${val}\r\n`);
+            await this.#writeRead(socket, `\r\n${data}\r\n.\r\n`);
 
-        return headers['Message-ID'];
+            return headers['Message-ID'];
+        } finally {
+            socket.destroy();
+        }
     }
 
     #connect(): Promise<Socket>
