@@ -1,11 +1,12 @@
 import fs from 'fs';
 import readline from 'readline';
 import { Mutex, Semaphore } from 'async-mutex';
-import axios, { AxiosRequestConfig, AxiosResponse, isAxiosError } from 'axios';
+import { AxiosRequestConfig, AxiosResponse, isAxiosError } from 'axios';
 import { Base64Encode } from 'base64-stream';
 import addressparser from 'nodemailer/lib/addressparser';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import { Config } from './Config';
+import { axiosUploadRequest, graphUserUrl } from './Http';
 import { UnrecoverableError } from './Constants';
 import { MsalProxy } from './MsalProxy';
 
@@ -53,7 +54,7 @@ export class Mailer
             try {
                 await this.#retryableRequest({
                     method: 'post',
-                    url: `https://graph.microsoft.com/v1.0/users/${sender}/sendMail`,
+                    url: graphUserUrl(sender, 'sendMail'),
                     data: readStream.pipe(new Base64Encode()),
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -89,26 +90,16 @@ export class Mailer
     }
 
     /** Automatically retry a request when it's being throttled by the Graph API */
-    static async #retryableRequest<RequestData = any, ReponseData = any>(request: AxiosRequestConfig<RequestData>): Promise<AxiosResponse<RequestData, ReponseData>>
+    static async #retryableRequest<RequestData = any, ResponseData = any>(request: AxiosRequestConfig<RequestData>): Promise<AxiosResponse<ResponseData, RequestData>>
     {
         const retryLimit = 3;
         let retryCount = 0;
         let wait = 200;
 
-        const retry = async (): Promise<AxiosResponse<RequestData, ReponseData>> =>
+        const retry = async (): Promise<AxiosResponse<ResponseData, RequestData>> =>
         {
-            const abortController = new AbortController();
-            const connectTimeout = setTimeout(()=>abortController.abort(`Server did not respond within 10 seconds`), 10000);
-            const overallTimeout = setTimeout(()=>abortController.abort(`Failed to send message within 120 seconds`), 120000);
-
             try {
-                return await axios({
-                    ...request,
-                    signal: abortController.signal,
-                    onUploadProgress: progress=>{
-                        clearTimeout(connectTimeout);
-                    },
-                });
+                return await axiosUploadRequest<RequestData, ResponseData>(request);
             } catch(error) {
                 if(++retryCount > retryLimit) // We've reached our retry limit?
                     throw error;
@@ -124,13 +115,8 @@ export class Mailer
 
                     return retry();
                 }
-                else if(axios.isCancel(error) && abortController.signal.aborted)
-                    throw abortController.signal.reason;
                 else // Unknown error response, throw the error
                     throw error;
-            } finally {
-                clearTimeout(connectTimeout);
-                clearTimeout(overallTimeout);
             }
         };
 
