@@ -41,7 +41,9 @@ describe('Axios integration', function(){
 
     it('Aborts when an upload never starts', async function(){
         const adapter: AxiosAdapter = config=>new Promise((resolve, reject)=>{
-            config.signal?.addEventListener('abort', ()=>reject(new CanceledError()), {once: true});
+            const signal = config.signal;
+            if (!signal?.addEventListener) throw new Error('Expected Axios to provide an abort-capable signal');
+            signal.addEventListener('abort', ()=>reject(new CanceledError()), {once: true});
         });
 
         await expect(axiosUploadRequest({url: 'https://graph.microsoft.com/v1.0/test', adapter}, {connect: 10, overall: 100}))
@@ -51,7 +53,9 @@ describe('Axios integration', function(){
     it('Keeps the overall timeout after upload progress starts', async function(){
         let progressCalled = false;
         const adapter: AxiosAdapter = config=>new Promise((resolve, reject)=>{
-            config.signal?.addEventListener('abort', ()=>reject(new CanceledError()), {once: true});
+            const signal = config.signal;
+            if (!signal?.addEventListener) throw new Error('Expected Axios to provide an abort-capable signal');
+            signal.addEventListener('abort', ()=>reject(new CanceledError()), {once: true});
             config.onUploadProgress?.({loaded: 1, bytes: 1} as AxiosProgressEvent);
         });
 
