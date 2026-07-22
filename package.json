@@ -38,8 +38,8 @@
     "@types/http-proxy": "^1.17.14",
     "@types/mailparser": "^3.4.4",
     "@types/mocha": "^10.0.6",
-    "@types/nodemailer": "^6.4.14",
-    "@types/smtp-server": "^3.5.10",
+    "@types/nodemailer": "^8.0.1",
+    "@types/smtp-server": "^3.5.13",
     "@types/tar": "^6.1.11",
     "chai": "^4.4.1",
     "chai-as-promised": "^7.1.1",
@@ -63,9 +63,9 @@
     "chokidar": "^3.5.3",
     "ip-cidr": "^4.0.0",
     "mailsplit": "^5.4.0",
-    "nodemailer": "^6.9.8",
+    "nodemailer": "^9.0.3",
     "rate-limiter-flexible": "^4.0.0",
-    "smtp-server": "^3.13.6",
+    "smtp-server": "^3.19.2",
     "winston": "^3.11.0",
     "yaml": "^2.3.4"
   }

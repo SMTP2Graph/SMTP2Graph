@@ -1,7 +1,8 @@
 import { expect } from 'chai';
 import '../_config';
 import { Server } from '../classes/Server';
-import { submitAndVerifyMail } from './Helpers';
+import { defaultMail, defaultTransportOptions, submitAndVerifyMail } from './Helpers';
+import LowLevelSMTPClient from '../classes/LowLevelSMTPClient';
 
 describe('Receive: Basic', async function(){
     const server = new Server({
@@ -78,6 +79,11 @@ describe('Receive: Basic', async function(){
                 subject: `TEST: ${this.test?.title}`,
             },
         });
+    });
+
+    it('Rejects malformed envelope addresses', async function(){
+        const client = new LowLevelSMTPClient(defaultTransportOptions.host!, defaultTransportOptions.port!);
+        await expect(client.sendMail('not-an-address', defaultMail.to as string, {}, 'Test body')).to.eventually.be.rejectedWith(/Bad sender address syntax/i);
     });
 
 });
