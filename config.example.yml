@@ -11,6 +11,12 @@ mode: full
 
 # Required (in 'full' and 'send' mode): App. registration information
 send:
+  # Optional: Entra ID / Azure AD authority host (default: commercial worldwide)
+  # GCC High: https://login.microsoftonline.us
+  # loginUrl: https://login.microsoftonline.com
+  # Optional: Microsoft Graph API base URL (default: commercial worldwide)
+  # GCC High: https://graph.microsoft.us
+  # graphUrl: https://graph.microsoft.com
   appReg:
     tenant: contoso # The name of the tenant (what comes before .onmicrosoft.com) OR your tenantID (GUID)
     id: 01234567-89ab-cdef-0123-456789abcdef

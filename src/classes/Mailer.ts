@@ -53,7 +53,7 @@ export class Mailer
             try {
                 await this.#retryableRequest({
                     method: 'post',
-                    url: `https://graph.microsoft.com/v1.0/users/${sender}/sendMail`,
+                    url: `${Config.graphUrl}/v1.0/users/${sender}/sendMail`,
                     data: readStream.pipe(new Base64Encode()),
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -175,7 +175,7 @@ export class Mailer
             if(!this.#msalClient) throw new UnrecoverableError('Trying to login without an application registration');
 
             const res = await this.#msalClient.acquireTokenByClientCredential({
-                scopes: ['https://graph.microsoft.com/.default'],
+                scopes: [Config.graphScope],
             });
             return res?.accessToken!;
         });
