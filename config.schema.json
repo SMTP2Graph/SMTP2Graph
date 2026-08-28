@@ -118,6 +118,18 @@
                         }
                     }
                 },
+                "loginUrl": {
+                    "title": "Entra ID / Azure AD authority host",
+                    "description": "Origin only (https, no path). Default: https://login.microsoftonline.com. GCC High: https://login.microsoftonline.us",
+                    "type": "string",
+                    "pattern": "^https://[^/]+$"
+                },
+                "graphUrl": {
+                    "title": "Microsoft Graph API base URL",
+                    "description": "Origin only (https, no path). Default: https://graph.microsoft.com. GCC High: https://graph.microsoft.us. Token scope is derived as {graphUrl}/.default",
+                    "type": "string",
+                    "pattern": "^https://[^/]+$"
+                },
                 "retryLimit": {
                     "title": "Times to retry sending a message when it failed",
                     "description": "Set to 0 to not retry (Default: 3)",

@@ -24,6 +24,10 @@ export interface IConfig
                 privateKeyPath: string;
             },
         },
+        /** Entra ID / Azure AD authority host (default: commercial). GCC High: https://login.microsoftonline.us */
+        loginUrl?: string;
+        /** Microsoft Graph API base URL (default: commercial). GCC High: https://graph.microsoft.us */
+        graphUrl?: string;
         /** Times to retry sending a message when it failed (0 = do not retry) */
         retryLimit?: number;
         /** Minutes between tries */
@@ -99,6 +103,9 @@ export class Config
                 throw new InvalidConfig(`Client key file "${this.clientCertificateKeyPath}" could not be found`);
             else if(!isStringValue(this.clientTenant))
                 throw new InvalidConfig('Missing "appReg.tenant" property');
+
+            this.#validateCloudUrl(this.#config.send?.loginUrl, 'send.loginUrl');
+            this.#validateCloudUrl(this.#config.send?.graphUrl, 'send.graphUrl');
         }
         
         if(this.sendRetryInterval !== undefined && this.sendRetryInterval < 1)
@@ -137,17 +144,65 @@ export class Config
             throw new InvalidConfig(`Property "httpProxy.password" is defined without "httpProxy.username"`);
     }
 
+    /** Validate optional loginUrl / graphUrl when set */
+    static #validateCloudUrl(value: string | undefined, propertyName: string)
+    {
+        if(value === undefined || value === null)
+            return;
+        if(typeof value !== 'string' || !value.trim())
+            throw new InvalidConfig(`Property "${propertyName}" must be a non-empty string`);
+
+        let parsed: URL;
+        try {
+            parsed = new URL(value.trim());
+        } catch {
+            throw new InvalidConfig(`Property "${propertyName}" is not a valid URL`);
+        }
+
+        if(parsed.protocol !== 'https:')
+            throw new InvalidConfig(`Property "${propertyName}" must use https`);
+        if(!parsed.hostname)
+            throw new InvalidConfig(`Property "${propertyName}" must include a hostname`);
+        if(parsed.pathname && parsed.pathname !== '/')
+            throw new InvalidConfig(`Property "${propertyName}" must be an origin only (no path); got "${parsed.pathname}"`);
+    }
+
+    /** Normalize cloud base URL: trim and strip trailing slash */
+    static #normalizeCloudUrl(value: string | undefined, defaultUrl: string): string
+    {
+        const raw = (value?.trim() || defaultUrl).replace(/\/+$/, '');
+        return raw;
+    }
+
     static get mode()
     {
         return this.#config.mode.toLowerCase() as IConfig['mode'];
     }
 
+    /** Entra ID authority host (no trailing slash). Default: commercial */
+    static get loginUrl()
+    {
+        return this.#normalizeCloudUrl(this.#config.send?.loginUrl, 'https://login.microsoftonline.com');
+    }
+
+    /** Microsoft Graph base URL (no trailing slash). Default: commercial */
+    static get graphUrl()
+    {
+        return this.#normalizeCloudUrl(this.#config.send?.graphUrl, 'https://graph.microsoft.com');
+    }
+
+    /** Client-credential scope derived from graphUrl */
+    static get graphScope()
+    {
+        return `${this.graphUrl}/.default`;
+    }
+
     static get msalAuthority()
     {
         if(/^[0-9a-f]{8}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{4}\-[0-9a-f]{12}$/i.test(this.clientTenant || '')) // We got a GUID instead of name?
-            return `https://login.microsoftonline.com/${this.clientTenant}`;
+            return `${this.loginUrl}/${this.clientTenant}`;
         else
-            return `https://login.microsoftonline.com/${this.clientTenant}.onmicrosoft.com`;
+            return `${this.loginUrl}/${this.clientTenant}.onmicrosoft.com`;
     }
 
     static get clientTenant()
