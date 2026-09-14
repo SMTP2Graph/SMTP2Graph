@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import '../_config';
 import { Server } from '../classes/Server';
 import { defaultMail, submitAndVerifyMail } from './Helpers';
+import { tlsCertPath, tlsKeyPath } from './tls-fixture';
 
 describe('Receive: Authentication', async function(){
     const server = new Server({
@@ -9,8 +10,8 @@ describe('Receive: Authentication', async function(){
         receive: {
             requireAuth: true,
             allowInsecureAuth: true,
-            tlsKeyPath: 'test/localhost.key',
-            tlsCertPath: 'test/localhost.crt',
+            tlsKeyPath,
+            tlsCertPath,
             users: [
                 {username: 'user', password: 'P@ssword!', allowedFrom: [defaultMail.from as string]},
             ],

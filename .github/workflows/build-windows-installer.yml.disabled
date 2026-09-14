@@ -1,0 +1,52 @@
+name: Build MSI Package
+
+on:
+  workflow_call:
+    inputs:
+      fetchPackageJson:
+        description: Fetch package.json from artifacts
+        type: boolean
+
+jobs:
+  build-msi:
+    runs-on: windows-latest # We need Windows to use WiX
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download package.json
+        if: ${{ inputs.fetchPackageJson }}
+        uses: actions/download-artifact@v4
+        with:
+          name: package-json
+
+      - name: Download builds
+        uses: actions/download-artifact@v4
+        with:
+          name: builds
+          path: dist
+
+      - name: Read package.json
+        id: manifest
+        uses: zoexx/github-action-json-file-properties@1.0.4
+        with:
+          file_path: package.json
+
+      - name: Get WiX
+        run: |
+          Invoke-WebRequest -Uri 'https://github.com/wixtoolset/wix3/releases/download/wix314rtm/wix314-binaries.zip' -OutFile './wix314-binaries.zip'
+          Expand-Archive -LiteralPath './wix314-binaries.zip' -DestinationPath './wix'
+
+      - name: Build MSI
+        run: |
+          .\wix\candle.exe .\tools\windows-setup\SMTP2Graph-setup.wxs -dVersion="${{ steps.manifest.outputs.version }}"
+          .\wix\light.exe .\SMTP2Graph-setup.wixobj
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer
+          path: SMTP2Graph-setup.msi
+          if-no-files-found: error
+        

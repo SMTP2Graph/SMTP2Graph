@@ -1,0 +1,11 @@
+{
+  "version": "v1.1.6",
+  "upstream": {
+    "tag": "v1.1.5",
+    "commit": "3a1ab485ed6c50265889cb230d8fbf73e2587e06"
+  },
+  "control_plane": {
+    "repository": "mzhk-repo/smtp2graph-deploy",
+    "sha": "fe3e461911c68949d9586b52a9c3253fa9795a45"
+  }
+}

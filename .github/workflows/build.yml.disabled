@@ -1,0 +1,153 @@
+name: Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: New version number
+        type: string
+      commit:
+        description: Commit the new version and create version tag
+        type: boolean
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup NodeJS
+        if: ${{ inputs.version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Read package.json
+        if: ${{ inputs.version }}
+        id: manifest
+        uses: zoexx/github-action-json-file-properties@1.0.4
+        with:
+          file_path: package.json
+
+      # Use Node to determine if the new version number is higher that the current
+      - name: Check version change
+        if: ${{ inputs.version }}
+        id: versionchange
+        run: |
+          node -p "'valid='+('${{ inputs.version }}' > '${{ steps.manifest.outputs.version }}'?'valid':'invalid')" >> $GITHUB_OUTPUT
+
+      - name: Invalid new version
+        if: ${{ inputs.version && steps.versionchange.outputs.valid != 'valid' }}
+        run: |
+          echo "::error ::The new version number (${{ inputs.version }}) is not higher than the current (${{ steps.manifest.outputs.version }})"
+          exit 1
+
+      # Update the version in the package file
+      - name: Change version
+        if: ${{ inputs.version }}
+        uses: maxgfr/github-change-json@v0.0.25
+        with:
+          key: version
+          value: ${{ inputs.version }}
+          path: package.json
+
+      - name: Upload package.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-json
+          path: package.json
+          if-no-files-found: error
+
+
+  build:
+    needs: [ prepare ]
+    uses: ./.github/workflows/build-sea.yml
+    with:
+      fetchPackageJson: true
+
+  build-installer:
+    needs: [ build ]
+    uses: ./.github/workflows/build-windows-installer.yml
+    with:
+      fetchPackageJson: true
+
+  test-win-x64:
+    needs: [ build ]
+    uses: ./.github/workflows/test-binary.yml
+    with:
+      binaryName: smtp2graph-win-x64.exe
+      platform: windows-latest
+
+  test-linux-x64:
+    needs: [ build ]
+    uses: ./.github/workflows/test-binary.yml
+    with:
+      binaryName: smtp2graph-linux-x64
+      platform: ubuntu-latest
+
+  test-linux-arm64:
+    needs: [ build ]
+    uses: ./.github/workflows/test-binary.yml
+    with:
+      binaryName: smtp2graph-linux-arm64
+      platform: ubuntu-latest
+      useArch: arm64
+
+  commit:
+    if: ${{ inputs.version && inputs.commit }}
+    runs-on: ubuntu-latest
+    needs: [test-win-x64, test-linux-x64, test-linux-arm64]
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download package.json
+        uses: actions/download-artifact@v4
+        with:
+          name: package-json
+
+      - name: Push version bump
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Version bump
+          file_pattern: package.json
+          tagging_message: v${{ inputs.version }}
+
+      - name: Download builds
+        uses: actions/download-artifact@v4
+        with:
+          name: builds
+          path: dist
+
+      - name: Download installer
+        uses: actions/download-artifact@v4
+        with:
+          name: installer
+          path: dist
+
+      - name: Create ZIP files
+        run: |
+          for file in dist/*; do
+              if [ -f "$file" ]; then
+                  zip "${file%.*}.zip" "$file"
+              fi
+          done
+
+          if [ -f "dist/server.zip" ]; then
+            mv "dist/server.zip" "dist/NodeJS.zip"
+          fi
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: v${{ inputs.version }}
+          tag_name: v${{ inputs.version }}
+          draft: true
+          files: dist/*.zip
+          fail_on_unmatched_files: true

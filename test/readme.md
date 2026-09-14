@@ -10,8 +10,8 @@ There are multiple test methods:
 You'll need the following config to run tests (you can put a .env file in your working directory):
 
 ```env
-CLIENTID="01234567-89ab-cdef-0123-456789abcdef"
-CLIENTSECRET="VGhpcyBpcyB2ZXJ5IHNlY3JldCE="
+CLIENTID="<application-client-id>"
+# Set the test application secret in an ignored .env file; do not place its value in this document.
 CLIENTTENANT="contoso"
 MAILBOX="test@example.com"
 ADDITIONALRECIPIENT="test2@example.com"

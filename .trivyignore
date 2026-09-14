@@ -1,0 +1,6 @@
+# Built-in test RSA key in node_modules/smtp-server bundled in dist/server.js
+dist/server.js
+AsymmetricPrivateKey
+private-key
+# Transitive dependency ip-address 9.0.5 of ip-cidr 4.0.0 (upgrade to 10.x breaks runtime CJS compatibility)
+CVE-2026-69192

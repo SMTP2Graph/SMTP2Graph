@@ -48,7 +48,7 @@
     "mailparser": "^3.6.6",
     "mocha": "^10.2.0",
     "rcedit": "^4.0.1",
-    "tar": "^6.2.0",
+    "tar": "^7.5.2",
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
@@ -58,15 +58,24 @@
   "dependencies": {
     "@azure/msal-node": "^2.10.0",
     "async-mutex": "^0.4.0",
-    "axios": "^1.6.5",
+    "axios": "^1.8.2",
     "base64-stream": "^1.0.0",
     "chokidar": "^3.5.3",
     "ip-cidr": "^4.0.0",
     "mailsplit": "^5.4.0",
-    "nodemailer": "^6.9.8",
+    "nodemailer": "^9.0.4",
     "rate-limiter-flexible": "^4.0.0",
-    "smtp-server": "^3.13.6",
+    "smtp-server": "^3.18.3",
     "winston": "^3.11.0",
     "yaml": "^2.3.4"
+  },
+  "overrides": {
+    "serialize-javascript": "^6.0.2",
+    "picomatch": "^2.3.2",
+    "linkify-it": "^5.0.2",
+    "axios": "^1.8.2",
+    "jws": "^3.2.3",
+    "braces": "^3.0.3",
+    "nodemailer": "^9.0.4"
   }
 }

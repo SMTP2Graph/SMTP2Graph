@@ -1,0 +1,4 @@
+# Secure delivery, release metadata and deployment ownership.
+/.github/workflows/ @mzhk-repo
+/release/ @mzhk-repo
+/Dockerfile @mzhk-repo

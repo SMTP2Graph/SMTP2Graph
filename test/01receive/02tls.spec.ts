@@ -2,14 +2,15 @@ import { expect } from 'chai';
 import '../_config';
 import { Server } from '../classes/Server';
 import { submitAndVerifyMail } from './Helpers';
+import { tlsCertPath, tlsKeyPath } from './tls-fixture';
 
 describe('Receive: TLS', async function(){
     const server = new Server({
         mode: 'receive',
         receive: {
             secure: true,
-            tlsKeyPath: 'test/localhost.key',
-            tlsCertPath: 'test/localhost.crt',
+            tlsKeyPath,
+            tlsCertPath,
         },
     });
 
@@ -38,6 +39,6 @@ describe('Receive: TLS', async function(){
         await expect(submitAndVerifyMail({transportOptions: {
             secure: true,
             ignoreTLS: false,
-        }})).to.eventually.be.rejectedWith(/SSL routines:ssl3_get_record:wrong version number/);
+        }})).to.eventually.be.rejectedWith(/wrong version number/);
     });
 });

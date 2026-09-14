@@ -28,7 +28,7 @@ export class MailQueue
      * Create a mail queue
      * @param rootPath Path where the queue, temp and failed folders are located/created
      */
-    constructor(rootPath: string = 'mailroot')
+    constructor(rootPath: string = Config.queueRootPath)
     {
         this.#paused = Config.mode === 'receive';
         this.#rootPath = rootPath;
@@ -42,6 +42,23 @@ export class MailQueue
     get tempPath(): string
     {
         return this.#tempPath;
+    }
+
+    /** Return true when the configured persistent storage threshold is reached. */
+    isAtOrAboveRejectThreshold(): boolean
+    {
+        if(!Config.queueMaxBytes) return false;
+        return this.#storageUsageBytes(this.#rootPath) >= (Config.queueMaxBytes * Config.queueRejectThresholdPercent / 100);
+    }
+
+    async close(): Promise<void>
+    {
+        if(this.#retryQueueInterval)
+        {
+            clearInterval(this.#retryQueueInterval);
+            this.#retryQueueInterval = undefined;
+        }
+        await this.#watcher?.close();
     }
 
     #startWatcher()
@@ -66,8 +83,22 @@ export class MailQueue
             this.#removeFromRetryQueue(filename);
         } catch(error) {
             log('error', `Failed to send message "${filename}"`, {error, filename});
-            if(!(error instanceof UnrecoverableError))
+            if(error instanceof UnrecoverableError)
+                this.#moveToFailed(filename, error);
+            else
                 this.#addToRetryQueue(filename);
+        }
+    }
+
+    /** Atomically remove a permanent failure from the live queue. */
+    #moveToFailed(filename: string, sendError: UnrecoverableError)
+    {
+        try {
+            fs.renameSync(path.join(this.#queuePath, filename), path.join(this.#failedPath, filename));
+            this.#removeFromRetryQueue(filename);
+            log('error', `Moved permanently failed message "${filename}" to failed`, {error: sendError, filename});
+        } catch(error) {
+            log('error', `Error moving permanently failed message "${filename}" to failed`, {error, filename});
         }
     }
 
@@ -132,29 +163,52 @@ export class MailQueue
         });
     }
 
-    add(filePath: string)
+    /**
+     * Atomically enqueue a closed EML file and make both the file and queue
+     * directory durable before the SMTP success boundary is crossed.
+     */
+    add(filePath: string): Promise<void>
     {
         const filename = path.basename(filePath);
         const dest = path.join(this.#queuePath, filename);
 
-        const attempt = (tries = 0) => {
-            try {
-                fs.renameSync(filePath, dest);
-                log('verbose', `Moved file "${filename}" to queue`);
-            } catch(error: any) {
-                // On Windows the file may still be locked for a brief moment after
-                // the stream closes.  Instead of failing permanently we retry a few
-                // times with a small backoff.
-                if(error.code === 'EPERM' && process.platform === 'win32' && tries < 5) {
-                    log('warn', `EPERM renaming "${filename}", retrying`, {tries});
-                    setTimeout(() => attempt(tries + 1), 100);
-                } else {
-                    log('error', `Error while moving "${filename}" to queue`, {error, filename});
-                }
-            }
-        };
+        return new Promise((resolve, reject)=>{
+            const attempt = (tries = 0) => {
+                try {
+                    fs.renameSync(filePath, dest);
 
-        attempt();
+                    const fileDescriptor = fs.openSync(dest, 'r');
+                    try {
+                        fs.fsyncSync(fileDescriptor);
+                    } finally {
+                        fs.closeSync(fileDescriptor);
+                    }
+
+                    const directoryDescriptor = fs.openSync(this.#queuePath, 'r');
+                    try {
+                        fs.fsyncSync(directoryDescriptor);
+                    } finally {
+                        fs.closeSync(directoryDescriptor);
+                    }
+
+                    log('verbose', `Moved file "${filename}" to durable queue`);
+                    resolve();
+                } catch(error: any) {
+                    // On Windows the file may still be locked for a brief moment after
+                    // the stream closes. Retry a bounded number of times before
+                    // returning a temporary SMTP failure to the sender.
+                    if(error.code === 'EPERM' && process.platform === 'win32' && tries < 5) {
+                        log('warn', `EPERM renaming "${filename}", retrying`, {tries});
+                        setTimeout(() => attempt(tries + 1), 100);
+                    } else {
+                        log('error', `Error while moving "${filename}" to durable queue`, {error, filename});
+                        reject(error);
+                    }
+                }
+            };
+
+            attempt();
+        });
     }
 
     remove(filePath: string)
@@ -178,7 +232,8 @@ export class MailQueue
             fs.mkdirSync(this.#queuePath);
 
         if(!this.#pathExists(this.#failedPath)?.isDirectory())
-            fs.mkdirSync(this.#failedPath);
+            fs.mkdirSync(this.#failedPath, {mode: 0o700});
+        fs.chmodSync(this.#failedPath, 0o700);
     }
 
     #pathExists(path: string)
@@ -189,5 +244,19 @@ export class MailQueue
             if(!('code' in error) || error.code !== 'ENOENT')
                 throw error;
         }
+    }
+
+    #storageUsageBytes(rootPath: string): number
+    {
+        let total = 0;
+        for(const entry of fs.readdirSync(rootPath, {withFileTypes: true}))
+        {
+            const entryPath = path.join(rootPath, entry.name);
+            if(entry.isDirectory())
+                total += this.#storageUsageBytes(entryPath);
+            else if(entry.isFile())
+                total += fs.statSync(entryPath).size;
+        }
+        return total;
     }
 }

@@ -8,6 +8,7 @@ import { ConfidentialClientApplication } from '@azure/msal-node';
 import { Config } from './Config';
 import { UnrecoverableError } from './Constants';
 import { MsalProxy } from './MsalProxy';
+import { getRetryDelay } from './Retry';
 
 export class MailboxAccessDenied extends UnrecoverableError { }
 export class InvalidMailContent extends UnrecoverableError { }
@@ -93,8 +94,6 @@ export class Mailer
     {
         const retryLimit = 3;
         let retryCount = 0;
-        let wait = 200;
-
         const retry = async (): Promise<AxiosResponse<RequestData, ReponseData>> =>
         {
             const abortController = new AbortController();
@@ -114,11 +113,8 @@ export class Mailer
                     throw error;
                 else if(isAxiosError(error) && (error.response?.status === 429 || error.response?.status === 503 || error.response?.status === 504)) // We got a retryable response?
                 {
-                    const retryAfter = error.response.headers['Retry-After'];
-                    if(retryAfter && !isNaN(retryAfter)) // We got throttled
-                        wait = parseInt(retryAfter) * 1000;
-                    else
-                        wait *= 2;
+                    const retryAfter = error.response.headers['retry-after'] ?? error.response.headers['Retry-After'];
+                    const wait = getRetryDelay(retryAfter, retryCount);
 
                     await this.#sleep(wait);
 

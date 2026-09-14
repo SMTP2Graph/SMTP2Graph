@@ -54,6 +54,8 @@ export interface IConfig
         allowInsecureAuth?: boolean;
         /** Require login */
         requireAuth?: boolean;
+        /** Maximum simultaneously connected clients from one source IP */
+        maxSessionsPerIp?: number;
         users?: {username: string, password: string, allowedFrom?: string[]}[];
         rateLimit?: {
             duration?: number,
@@ -63,6 +65,14 @@ export interface IConfig
             duration?: number,
             limit?: number;
         };
+    },
+    storage?: {
+        /** Persistent root that contains temp, queue and failed folders */
+        rootPath?: string;
+        /** Maximum bytes allowed across the persistent storage root */
+        maxBytes?: number;
+        /** Reject new MAIL FROM submissions when usage reaches this percentage */
+        rejectThresholdPercent?: number;
     },
     httpProxy?: {
         host: string,
@@ -123,8 +133,16 @@ export class Config
             throw new InvalidConfig(`Property "receive.rateLimit.limit" should be a number`);
         else if(this.smtpAuthLimitDuration && typeof this.smtpAuthLimitDuration !== 'number')
             throw new InvalidConfig(`Property "receive.authLimit.duration" should be a number`);
-        else if(this.smtpAuthLimitDuration && typeof this.smtpAuthLimitDuration !== 'number')
+        else if(this.smtpAuthLimitLimit && typeof this.smtpAuthLimitLimit !== 'number')
             throw new InvalidConfig(`Property "receive.authLimit.limit" should be a number`);
+        else if(this.smtpMaxSessionsPerIp !== undefined && (!Number.isInteger(this.smtpMaxSessionsPerIp) || this.smtpMaxSessionsPerIp < 1))
+            throw new InvalidConfig(`Property "receive.maxSessionsPerIp" should be a positive integer`);
+        else if(this.#config.storage?.rootPath !== undefined && (typeof this.queueRootPath !== 'string' || !this.queueRootPath))
+            throw new InvalidConfig(`Property "storage.rootPath" should be a non-empty string`);
+        else if(this.queueMaxBytes !== undefined && (!Number.isSafeInteger(this.queueMaxBytes) || this.queueMaxBytes < 1))
+            throw new InvalidConfig(`Property "storage.maxBytes" should be a positive safe integer`);
+        else if(this.#config.storage?.rejectThresholdPercent !== undefined && (typeof this.queueRejectThresholdPercent !== 'number' || this.queueRejectThresholdPercent <= 0 || this.queueRejectThresholdPercent > 100))
+            throw new InvalidConfig(`Property "storage.rejectThresholdPercent" should be between 0 and 100`);
         else if(this.#config.httpProxy && typeof this.#config.httpProxy.host !== 'string')
             throw new InvalidConfig(`Property "httpProxy.host" should be a string`);
         else if(this.#config.httpProxy && typeof this.#config.httpProxy.port !== 'number')
@@ -282,6 +300,26 @@ export class Config
     static get smtpRateLimitLimit()
     {
         return this.#config.receive?.rateLimit?.limit ?? 10000;
+    }
+
+    static get smtpMaxSessionsPerIp()
+    {
+        return this.#config.receive?.maxSessionsPerIp;
+    }
+
+    static get queueRootPath()
+    {
+        return this.#config.storage?.rootPath ?? 'mailroot';
+    }
+
+    static get queueMaxBytes()
+    {
+        return this.#config.storage?.maxBytes;
+    }
+
+    static get queueRejectThresholdPercent()
+    {
+        return this.#config.storage?.rejectThresholdPercent ?? 80;
     }
 
     static get smtpAuthLimitDuration()

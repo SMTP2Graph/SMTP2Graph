@@ -1,0 +1,8 @@
+title = "smtp2graph-build gitleaks policy"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Upstream historical test fixtures and example configuration"
+commits = ["22703f2fa1838216d805c9302b9ae55027f2bbca", "1608e7de4955b5179ec097dc7b03922e99e1ef08", "b18fc461c44c376218e9991fc31ee18356725d5f"]
