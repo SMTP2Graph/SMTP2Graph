@@ -42,6 +42,11 @@ export class SMTPServer
             cert: Config.smtpTlsCert,
             allowInsecureAuth: Config.smtpAllowTls?Config.smtpAllowInsecureAuth:true,
             disabledCommands: Config.smtpAllowTls?undefined:['STARTTLS'],
+            ...(Config.smtpTlsMinVersion ? { minVersion: Config.smtpTlsMinVersion } : {}),
+            ...(Config.smtpTlsMaxVersion ? { maxVersion: Config.smtpTlsMaxVersion } : {}),
+            ...(Config.smtpTlsCiphers ? { ciphers: Config.smtpTlsCiphers } : {}),
+            ...(Config.smtpTlsEcdhCurve ? { ecdhCurve: Config.smtpTlsEcdhCurve } : {}),
+            ...(Config.smtpTlsHonorCipherOrder !== undefined ? { honorCipherOrder: Config.smtpTlsHonorCipherOrder } : {}),
         });
     }
 

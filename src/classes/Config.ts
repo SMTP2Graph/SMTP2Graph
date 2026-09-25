@@ -42,6 +42,19 @@ export interface IConfig
         tlsKeyPath?: string;
         /** Path to the TLS certificate file */
         tlsCertPath?: string;
+        /** TLS policy configuration */
+        tls?: {
+            /** Minimum TLS version (default: TLSv1.2) */
+            minVersion?: 'TLSv1.3' | 'TLSv1.2' | 'TLSv1.1' | 'TLSv1';
+            /** Maximum TLS version */
+            maxVersion?: 'TLSv1.3' | 'TLSv1.2' | 'TLSv1.1' | 'TLSv1';
+            /** OpenSSL cipher suite specification string */
+            ciphers?: string;
+            /** Allowed ECDH curves / key exchange groups (e.g. X25519MLKEM768:X25519:prime256v1:secp384r1) */
+            ecdhCurve?: string;
+            /** Prioritize server cipher order preference */
+            honorCipherOrder?: boolean;
+        };
         /** Maximum allowed mail size. Accepts string ending with 'k' (Kilobytes) or 'm' (Megabytes) */
         maxSize?: string;
         /** The banner being shown when a client connects to the STMP server */
@@ -117,7 +130,36 @@ export class Config
             throw new InvalidConfig(`Property "tlsKeyPath" is defined without "tlsCertPath"`);
         else if(!this.smtpTlsKeyPath && this.smtpTlsCertPath)
             throw new InvalidConfig(`Property "smtpTlsCertPath" is defined without "tlsKeyPath"`);
-        else if(this.smtpRateLimitDuration && typeof this.smtpRateLimitDuration !== 'number')
+
+        if(this.#config.receive?.tls !== undefined)
+        {
+            if(typeof this.#config.receive.tls !== 'object' || this.#config.receive.tls === null || Array.isArray(this.#config.receive.tls))
+                throw new InvalidConfig('Property "receive.tls" should be an object');
+
+            const validTlsVersions = ['TLSv1.3', 'TLSv1.2', 'TLSv1.1', 'TLSv1'];
+            if(this.smtpTlsMinVersion && !validTlsVersions.includes(this.smtpTlsMinVersion))
+                throw new InvalidConfig(`Invalid "receive.tls.minVersion" property: must be one of ${validTlsVersions.join(', ')}`);
+            if(this.smtpTlsMaxVersion && !validTlsVersions.includes(this.smtpTlsMaxVersion))
+                throw new InvalidConfig(`Invalid "receive.tls.maxVersion" property: must be one of ${validTlsVersions.join(', ')}`);
+
+            const tlsVersionOrder = {'TLSv1': 1, 'TLSv1.1': 2, 'TLSv1.2': 3, 'TLSv1.3': 4};
+            if(this.smtpTlsMinVersion && this.smtpTlsMaxVersion)
+            {
+                if(tlsVersionOrder[this.smtpTlsMinVersion] > tlsVersionOrder[this.smtpTlsMaxVersion])
+                    throw new InvalidConfig('"receive.tls.minVersion" cannot be higher than "receive.tls.maxVersion"');
+            }
+
+            if(this.smtpTlsCiphers !== undefined && (typeof this.smtpTlsCiphers !== 'string' || !this.smtpTlsCiphers.trim()))
+                throw new InvalidConfig('Property "receive.tls.ciphers" should be a non-empty string');
+
+            if(this.smtpTlsEcdhCurve !== undefined && (typeof this.smtpTlsEcdhCurve !== 'string' || !this.smtpTlsEcdhCurve.trim()))
+                throw new InvalidConfig('Property "receive.tls.ecdhCurve" should be a non-empty string');
+
+            if(this.smtpTlsHonorCipherOrder !== undefined && typeof this.smtpTlsHonorCipherOrder !== 'boolean')
+                throw new InvalidConfig('Property "receive.tls.honorCipherOrder" should be a boolean');
+        }
+
+        if(this.smtpRateLimitDuration && typeof this.smtpRateLimitDuration !== 'number')
             throw new InvalidConfig(`Property "receive.rateLimit.duration" should be a number`);
         else if(this.smtpRateLimitLimit && typeof this.smtpRateLimitLimit !== 'number')
             throw new InvalidConfig(`Property "receive.rateLimit.limit" should be a number`);
@@ -231,6 +273,31 @@ export class Config
     {
         if(this.smtpTlsCertPath && fs.existsSync(this.smtpTlsCertPath))
             return fs.readFileSync(this.smtpTlsCertPath);
+    }
+
+    static get smtpTlsMinVersion()
+    {
+        return this.#config.receive?.tls?.minVersion ?? 'TLSv1.2';
+    }
+
+    static get smtpTlsMaxVersion()
+    {
+        return this.#config.receive?.tls?.maxVersion;
+    }
+
+    static get smtpTlsCiphers()
+    {
+        return this.#config.receive?.tls?.ciphers;
+    }
+
+    static get smtpTlsEcdhCurve()
+    {
+        return this.#config.receive?.tls?.ecdhCurve;
+    }
+
+    static get smtpTlsHonorCipherOrder()
+    {
+        return this.#config.receive?.tls?.honorCipherOrder;
     }
 
     static get smtpAllowTls()

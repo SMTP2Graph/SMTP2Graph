@@ -39,6 +39,27 @@ receive:
   tlsKeyPath: private.key
   # Optional: Path to your certificate
   tlsCertPath: server.crt
+  # Optional: TLS policy configuration
+  # By default, SMTP2Graph on Node 24 defaults to TLS 1.2 or newer (minVersion: TLSv1.2).
+  # You can customize TLS versions, cipher suites, and key exchange groups here.
+  # tls:
+  #   # Optional: Minimum TLS version. Allowed: TLSv1, TLSv1.1, TLSv1.2, TLSv1.3 (default: TLSv1.2)
+  #   minVersion: TLSv1.2
+  #   # Optional: Maximum TLS version. Allowed: TLSv1, TLSv1.1, TLSv1.2, TLSv1.3
+  #   maxVersion: TLSv1.3
+  #   # Optional: Allowed cipher suites (colon-separated list)
+  #   ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384"
+  #   # Optional: ECDH curves / key exchange groups (supports hybrid ML-KEM post-quantum groups in OpenSSL 3.5)
+  #   ecdhCurve: "X25519MLKEM768:X25519:prime256v1:secp384r1"
+  #   # Optional: Prioritize server cipher preference order
+  #   honorCipherOrder: true
+  #
+  # Legacy TLS 1.0/1.1 interoperability:
+  # In Node 24 (OpenSSL 3.5), TLS 1.0 and 1.1 are disabled by OpenSSL security policy by default.
+  # To deliberately allow legacy clients, both minVersion and the security level must be adjusted:
+  # tls:
+  #   minVersion: TLSv1
+  #   ciphers: "DEFAULT@SECLEVEL=0"
   # Optional: Maximum message size
   # Accepts string ending with 'k' (Kilobytes) or 'm' (Megabytes). Default: 100m
   maxSize: 25m

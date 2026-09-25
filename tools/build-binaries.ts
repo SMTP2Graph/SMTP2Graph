@@ -4,7 +4,7 @@ import { exec, ExecOptions } from 'child_process';
 import rcedit from 'rcedit';
 import { Arch, downloadBinary, findVersion, Platform, Version } from './nodejs-downloader';
 
-const distNodeVersion = '20';
+const distNodeVersion = '24';
 const distributions: {platform: Platform, arch: Arch}[] = [
     {platform: 'win', arch: 'x64'},
     {platform: 'linux', arch: 'x64'},

@@ -38,4 +38,21 @@ describe('Receive: Rate limiter', async function(){
         expect(rateLimitExceeded, 'We were not blocked after 15 attempts').to.be.true;
     });
 
+    it('Fails startup when rateLimit duration is invalid even if TLS policy is configured', async function(){
+        const invalidServer = new Server({
+            mode: 'receive',
+            receive: {
+                tls: {
+                    minVersion: 'TLSv1.2',
+                },
+                rateLimit: {
+                    duration: 'invalid' as any,
+                    limit: 10,
+                },
+            },
+        });
+
+        await expect(invalidServer.start(), 'Server should fail startup with invalid rateLimit duration').to.eventually.be.rejectedWith(/receive\.rateLimit\.duration/);
+    });
+
 });

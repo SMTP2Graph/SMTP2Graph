@@ -18,7 +18,7 @@ SMTP2Graph is an SMTP server that will send messages over the Microsoft 365/Exch
 ## Features
 
 - SMTP AUTH support (PLAIN and LOGIN)
-- TLS support
+- TLS support (defaults to TLS 1.2+; configurable TLS versions, ciphers, and ECDH groups; legacy TLS 1.0/1.1 opt-in via `ciphers: "DEFAULT@SECLEVEL=0"`)
 - IP whitelist
 - FROM whitelist
 - Rate limiter

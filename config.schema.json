@@ -198,6 +198,40 @@
                     "type": "string",
                     "required": ["tlsKeyPath"]
                 },
+                "tls": {
+                    "title": "TLS policy configuration",
+                    "type": "object",
+                    "properties": {
+                        "minVersion": {
+                            "title": "Minimum TLS version",
+                            "description": "Allowed values: TLSv1, TLSv1.1, TLSv1.2, TLSv1.3 (default: TLSv1.2). Note: TLSv1 and TLSv1.1 are legacy interoperability options and also require lowering OpenSSL security level (e.g. ciphers: 'DEFAULT@SECLEVEL=0')",
+                            "type": "string",
+                            "enum": ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]
+                        },
+                        "maxVersion": {
+                            "title": "Maximum TLS version",
+                            "description": "Allowed values: TLSv1, TLSv1.1, TLSv1.2, TLSv1.3",
+                            "type": "string",
+                            "enum": ["TLSv1", "TLSv1.1", "TLSv1.2", "TLSv1.3"]
+                        },
+                        "ciphers": {
+                            "title": "Allowed cipher suites",
+                            "description": "Cipher suite specification string (e.g. colon-separated OpenSSL cipher list)",
+                            "type": "string"
+                        },
+                        "ecdhCurve": {
+                            "title": "ECDH curves / key exchange groups",
+                            "description": "Colon-separated list of curves/groups (e.g. X25519MLKEM768:X25519:prime256v1:secp384r1)",
+                            "type": "string"
+                        },
+                        "honorCipherOrder": {
+                            "title": "Honor cipher order",
+                            "description": "When true, server's cipher suite preference is prioritized",
+                            "type": "boolean"
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "maxSize": {
                     "title": "Maximum message size",
                     "description": "Only accepts string ending with 'k' (Kilobytes) or 'm' (Megabytes). Default: 100m",
