@@ -1,0 +1,2 @@
+# Shell scripts are copied into the Docker image and must keep LF line endings
+*.sh text eol=lf

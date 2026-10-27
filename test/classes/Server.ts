@@ -17,29 +17,44 @@ export class Server
         return server;
     }
 
-    constructor(public config: IConfig)
+    /**
+     * @param config Config written to a config file. When undefined, no config file is used (configure the server through `env` instead)
+     * @param env Additional (SMTP2GRAPH_*) environment variables for the server process
+     */
+    constructor(public config?: IConfig, public env?: Record<string, string>)
     {
 
     }
 
     start(timeout: number = 5000): Promise<void>
     {
-        // Apply default port from our transport options
-        if(!this.config.receive?.port) this.config = {...this.config, receive: {...this.config.receive, port: defaultTransportOptions.port}};
+        const args: string[] = [];
 
-        // Create config file
-        try {
-            fs.writeFileSync(this.#configFile, stringify(this.config));
-        } catch(error) {
-            throw new Error(`Failed to created config file. ${String(error)}`);
+        if(this.config)
+        {
+            // Apply default port from our transport options
+            if(!this.config.receive?.port) this.config = {...this.config, receive: {...this.config.receive, port: defaultTransportOptions.port}};
+
+            // Create config file
+            try {
+                fs.writeFileSync(this.#configFile, stringify(this.config));
+            } catch(error) {
+                throw new Error(`Failed to created config file. ${String(error)}`);
+            }
+
+            args.push(`--config=${this.#configFile}`);
         }
+        else if(!this.env?.SMTP2GRAPH_RECEIVE_PORT) // Apply default port from our transport options
+            this.env = {...this.env, SMTP2GRAPH_RECEIVE_PORT: String(defaultTransportOptions.port)};
+
+        const env = {...process.env, ...this.env};
 
         // Start the server
         return new Promise<void>((resolve, reject)=>{
             if(this.#serverFile.endsWith('.js'))
-                this.#proc = spawn('node', [this.#serverFile, `--config=${this.#configFile}`]);
+                this.#proc = spawn('node', [this.#serverFile, ...args], {env});
             else // We're testing a binary file?
-                this.#proc = spawn(this.#serverFile, [`--config=${this.#configFile}`]);
+                this.#proc = spawn(this.#serverFile, args, {env});
             let errorStr: string = '';
 
             const onTimeout = ()=>{
@@ -123,7 +138,7 @@ export class Server
         }
     }
 
-    async restart(additionalConfig?: Partial<IConfig>): Promise<void>
+    async restart(additionalConfig?: Partial<IConfig>, additionalEnv?: Record<string, string>): Promise<void>
     {
         // Stop the currently running server
         try {
@@ -133,7 +148,8 @@ export class Server
         }
 
         // Modify config
-        this.config = {...this.config, ...additionalConfig};
+        if(additionalConfig) this.config = {...this.config, ...additionalConfig} as IConfig;
+        if(additionalEnv) this.env = {...this.env, ...additionalEnv};
 
         // Start a new server
         try {

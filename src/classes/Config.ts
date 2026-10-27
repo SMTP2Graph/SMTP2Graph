@@ -75,6 +75,44 @@ export interface IConfig
 
 export class InvalidConfig extends Error { }
 
+/** Prefix for all environment variables that can be used to configure SMTP2Graph */
+const ENV_PREFIX = 'SMTP2GRAPH_';
+
+type EnvValueType = 'string'|'number'|'boolean'|'list';
+
+/** Environment variables that can be used instead of (or on top of) the config file. Values from the environment take precedence */
+const envMappings: {env: string, path: string, type: EnvValueType}[] = [
+    {env: 'MODE', path: 'mode', type: 'string'},
+    {env: 'SEND_APPREG_TENANT', path: 'send.appReg.tenant', type: 'string'},
+    {env: 'SEND_APPREG_ID', path: 'send.appReg.id', type: 'string'},
+    {env: 'SEND_APPREG_SECRET', path: 'send.appReg.secret', type: 'string'},
+    {env: 'SEND_APPREG_CERTIFICATE_THUMBPRINT', path: 'send.appReg.certificate.thumbprint', type: 'string'},
+    {env: 'SEND_APPREG_CERTIFICATE_PRIVATEKEYPATH', path: 'send.appReg.certificate.privateKeyPath', type: 'string'},
+    {env: 'SEND_RETRYLIMIT', path: 'send.retryLimit', type: 'number'},
+    {env: 'SEND_RETRYINTERVAL', path: 'send.retryInterval', type: 'number'},
+    {env: 'SEND_FORCEMAILBOX', path: 'send.forceMailbox', type: 'string'},
+    {env: 'RECEIVE_PORT', path: 'receive.port', type: 'number'},
+    {env: 'RECEIVE_LISTENADDRESS', path: 'receive.listenAddress', type: 'string'},
+    {env: 'RECEIVE_SECURE', path: 'receive.secure', type: 'boolean'},
+    {env: 'RECEIVE_TLSKEYPATH', path: 'receive.tlsKeyPath', type: 'string'},
+    {env: 'RECEIVE_TLSCERTPATH', path: 'receive.tlsCertPath', type: 'string'},
+    {env: 'RECEIVE_MAXSIZE', path: 'receive.maxSize', type: 'string'},
+    {env: 'RECEIVE_BANNER', path: 'receive.banner', type: 'string'},
+    {env: 'RECEIVE_IPWHITELIST', path: 'receive.ipWhitelist', type: 'list'},
+    {env: 'RECEIVE_ALLOWEDFROM', path: 'receive.allowedFrom', type: 'list'},
+    {env: 'RECEIVE_ALLOWINSECUREAUTH', path: 'receive.allowInsecureAuth', type: 'boolean'},
+    {env: 'RECEIVE_REQUIREAUTH', path: 'receive.requireAuth', type: 'boolean'},
+    {env: 'RECEIVE_RATELIMIT_DURATION', path: 'receive.rateLimit.duration', type: 'number'},
+    {env: 'RECEIVE_RATELIMIT_LIMIT', path: 'receive.rateLimit.limit', type: 'number'},
+    {env: 'RECEIVE_AUTHLIMIT_DURATION', path: 'receive.authLimit.duration', type: 'number'},
+    {env: 'RECEIVE_AUTHLIMIT_LIMIT', path: 'receive.authLimit.limit', type: 'number'},
+    {env: 'HTTPPROXY_HOST', path: 'httpProxy.host', type: 'string'},
+    {env: 'HTTPPROXY_PORT', path: 'httpProxy.port', type: 'number'},
+    {env: 'HTTPPROXY_PROTOCOL', path: 'httpProxy.protocol', type: 'string'},
+    {env: 'HTTPPROXY_USERNAME', path: 'httpProxy.username', type: 'string'},
+    {env: 'HTTPPROXY_PASSWORD', path: 'httpProxy.password', type: 'string'},
+];
+
 export class Config
 {
     static #configData: IConfig | undefined;
@@ -86,7 +124,7 @@ export class Config
             return (typeof val === 'string' && val);
         };
 
-        if(typeof this.mode !== 'string' || !['full','receive','send'].includes(this.mode))
+        if(typeof (this.#config.mode ?? 'full') !== 'string' || !['full','receive','send'].includes(this.mode))
             throw new InvalidConfig('Invalid "mode" config property');
 
         if(this.mode !== 'receive') // We're also sending?
@@ -139,7 +177,7 @@ export class Config
 
     static get mode()
     {
-        return this.#config.mode.toLowerCase() as IConfig['mode'];
+        return (this.#config.mode ?? 'full').toLowerCase() as IConfig['mode'];
     }
 
     static get msalAuthority()
@@ -316,7 +354,7 @@ export class Config
 
     static get httpProxyPassword()
     {
-        return this.#config.httpProxy?.username;
+        return this.#config.httpProxy?.password;
     }
 
     static get httpProxyConfig(): AxiosProxyConfig | undefined
@@ -382,20 +420,110 @@ export class Config
         {
             const configFileArgs = process.argv.find(arg=>arg.startsWith('--config=') && arg.length > 9);
             const configFile = configFileArgs?configFileArgs.substring(9):'config.yml';
+            let fileConfig: IConfig | undefined;
 
-            try {
-                const data = fs.readFileSync(configFile);
+            // The config file is optional when environment variables are used, unless it was explicitly specified
+            if(configFileArgs || fs.existsSync(configFile))
+            {
                 try {
-                    this.#configData = parseYaml(data.toString('utf-8'));
+                    const data = fs.readFileSync(configFile);
+                    try {
+                        fileConfig = parseYaml(data.toString('utf-8')) ?? {};
+                    } catch(error: any) {
+                        throw `Failed to parse YAML: ${String(error)}`;
+                    }
                 } catch(error: any) {
-                    throw `Failed to parse YAML: ${String(error)}`;
+                    throw new Error(`Unable to read config file "${configFile}". ${String(error)}`);
                 }
-            } catch(error: any) {
-                throw new Error(`Unable to read config file "${configFile}". ${String(error)}`);
             }
+
+            const { config, applied } = this.#applyEnv(fileConfig ?? {} as IConfig);
+            if(!fileConfig && !applied)
+                throw new Error(`Config file "${configFile}" not found and no ${ENV_PREFIX}* environment variables are set`);
+
+            this.#configData = config;
         }
 
         return this.#configData!;
+    }
+
+    /** Apply SMTP2GRAPH_* environment variables on top of the given config */
+    static #applyEnv(config: IConfig): {config: IConfig, applied: boolean}
+    {
+        let applied = false;
+
+        const setPath = (path: string, value: any)=>{
+            const keys = path.split('.');
+            let obj: any = config;
+            for(const key of keys.slice(0, -1))
+            {
+                if(typeof obj[key] !== 'object' || obj[key] === null) obj[key] = {};
+                obj = obj[key];
+            }
+            obj[keys[keys.length-1]] = value;
+            applied = true;
+        };
+
+        for(const mapping of envMappings)
+        {
+            const envName = ENV_PREFIX+mapping.env;
+            const raw = process.env[envName];
+            if(raw === undefined || raw === '') continue;
+
+            setPath(mapping.path, this.#parseEnvValue(envName, raw, mapping.type));
+        }
+
+        // SMTP users are defined as SMTP2GRAPH_RECEIVE_USERS_<n>_USERNAME, _PASSWORD and _ALLOWEDFROM
+        const userRegex = new RegExp(`^${ENV_PREFIX}RECEIVE_USERS_(\\d+)_(USERNAME|PASSWORD|ALLOWEDFROM)$`, 'i');
+        const users = new Map<number, {username?: string, password?: string, allowedFrom?: string[]}>();
+        for(const [envName, raw] of Object.entries(process.env))
+        {
+            const matches = userRegex.exec(envName);
+            if(!matches || raw === undefined || raw === '') continue;
+
+            const index = Number(matches[1]);
+            const user = users.get(index) ?? {};
+            const field = matches[2].toUpperCase();
+            if(field === 'USERNAME') user.username = raw;
+            else if(field === 'PASSWORD') user.password = raw;
+            else user.allowedFrom = this.#parseEnvValue(envName, raw, 'list') as string[];
+            users.set(index, user);
+        }
+
+        if(users.size)
+        {
+            const userList = [...users.entries()].sort(([a], [b])=>a-b).map(([index, user])=>{
+                if(!user.username || !user.password)
+                    throw new InvalidConfig(`Environment variables ${ENV_PREFIX}RECEIVE_USERS_${index}_USERNAME and ${ENV_PREFIX}RECEIVE_USERS_${index}_PASSWORD are both required`);
+                return user as {username: string, password: string, allowedFrom?: string[]};
+            });
+            setPath('receive.users', userList);
+        }
+
+        return {config, applied};
+    }
+
+    /** Convert the string value of an environment variable to the desired type */
+    static #parseEnvValue(envName: string, raw: string, type: EnvValueType): string|number|boolean|string[]
+    {
+        if(type === 'number')
+        {
+            const value = raw.trim();
+            if(value === '' || isNaN(value as any))
+                throw new InvalidConfig(`Environment variable ${envName} should be a number`);
+            return Number(value);
+        }
+        else if(type === 'boolean')
+        {
+            const value = raw.trim().toLowerCase();
+            if(['true','1','yes','on'].includes(value)) return true;
+            else if(['false','0','no','off'].includes(value)) return false;
+            throw new InvalidConfig(`Environment variable ${envName} should be a boolean (true/false)`);
+        }
+        else if(type === 'list') // Comma separated list
+            return raw.split(',').map(item=>item.trim()).filter(item=>item);
+        else
+            return raw;
     }
 
     /** Get config value from CLI argument */
