@@ -6,6 +6,8 @@ on:
   push:
     branches: [dev, main]
     tags: ['v*']
+    paths-ignore:
+      - '**.md'
 
 permissions:
   contents: write

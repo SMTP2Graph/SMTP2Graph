@@ -1,7 +1,11 @@
 const { readFileSync } = require('node:fs');
+const { parse } = require('yaml');
 
 const workflow = readFileSync('.github/workflows/release-ci.yml', 'utf8');
 const fail = (message) => { throw new Error(`workflow policy: ${message}`); };
+const triggers = parse(workflow).on;
+if (JSON.stringify(triggers.push['paths-ignore']) !== JSON.stringify(['**.md'])) fail('branch pushes containing only Markdown changes must be ignored.');
+if (triggers.pull_request['paths-ignore'] || triggers.pull_request.paths) fail('Markdown changes must not bypass PR validation.');
 
 if (!workflow.includes("branches: [dev, main]") && !workflow.includes("branches: [dev]")) fail('PR and development push must target dev or main.');
 if (!workflow.includes("tags: ['v*']")) fail('release path must require a version tag.');
