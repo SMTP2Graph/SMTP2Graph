@@ -1,9 +1,9 @@
 # SMTP2Graph tests
 
 There are multiple test methods:
-- `npm run test:receive`: Test the SMTP server
+- `npm run test`: Test the SMTP server
 - `npm run test:send`: Test sending over the Graph API (needs additional config)
-- `npm run test`: Run all tests
+- `npm run test:all`: Run all tests
 
 ## Send test config
 

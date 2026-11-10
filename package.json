@@ -8,8 +8,8 @@
     "watch": "webpack --mode \"development\" -w",
     "build": "webpack --mode \"production\"",
     "build-binaries": "ts-node ./tools/build-binaries.ts",
-    "test": "mocha test/**/*.spec.ts",
-    "test:receive": "mocha test/01receive/**/*.spec.ts",
+    "test": "mocha test/{01receive,03axios}/**/*.spec.ts",
+    "test:all": "mocha test/**/*.spec.ts",
     "test:send": "mocha test/02send/**/*.spec.ts"
   },
   "repository": {
@@ -61,12 +61,12 @@
     "axios": "^1.18.1",
     "base64-stream": "^1.0.0",
     "chokidar": "^3.5.3",
-    "ip-cidr": "^4.0.2",
+    "ip-cidr": "^4.0.0",
     "mailsplit": "^5.4.0",
     "nodemailer": "^6.9.8",
     "rate-limiter-flexible": "^4.0.0",
     "smtp-server": "^3.13.6",
     "winston": "^3.11.0",
-    "yaml": "^2.9.0"
+    "yaml": "^2.3.4"
   }
 }
