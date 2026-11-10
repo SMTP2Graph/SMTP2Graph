@@ -98,4 +98,25 @@ describe('Send: Basic', async function(){
         await verifyMail(mail, messageId, received);
     });
 
+    it('Folded From header', async function(){
+        const client = new LowLevelSMTPClient(defaultTransportOptions.host!, defaultTransportOptions.port!);
+
+        const mail: Mail.Options = {
+            ...defaultMail,
+            subject: `TEST: ${this.test?.title}`,
+        };
+
+        // The address is on a continuation line (RFC 5322 folding), so the sender can only be found after unfolding
+        const headers = {
+            From: `"SMTP2Graph Test"\r\n <${defaultMail.from}>`,
+            To: defaultMail.to as string,
+            Subject: mail.subject!,
+        };
+
+        const messageId: string = await expect(client.sendMail(defaultMail.from as string, defaultMail.to as string, headers, defaultMail.text as string), 'Failed to send message').to.eventually.be.fulfilled;
+        const received: Message = await expect(waitForMessage(messageId), 'No message was send').to.eventually.be.fulfilled;
+
+        await verifyMail(mail, messageId, received);
+    });
+
 });
