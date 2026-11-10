@@ -7,6 +7,8 @@ if(process.argv.includes('-v') || process.argv.includes('--version')) // We're a
     console.log(`SMTP2Graph v${VERSION}`);
 else
 {
+    log('info', `Starting SMTP2Graph v${VERSION}...`);
+
     (async ()=>{
         // Validate the config before continuing
         try {
