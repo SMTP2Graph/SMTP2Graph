@@ -3,6 +3,7 @@ import axios from 'axios';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import { Message } from '@microsoft/microsoft-graph-types';
 import { config } from '../_config';
+import { graphUserUrl } from '../../src/classes/Http';
 
 export class Mailbox
 {
@@ -18,9 +19,13 @@ export class Mailbox
     static async fetchMessageByMsgId(msgId: string): Promise<Message | undefined>
     {
         const token = await this.#aquireToken();
+        const url = new URL(graphUserUrl(config.mailbox, 'messages'));
+        url.searchParams.set('$filter', `internetMessageId eq '${msgId.replace(/'/g, "''")}'`);
+        url.searchParams.set('$expand', 'Attachments');
+        url.searchParams.set('$top', '1');
 
         const res = await axios<{value?: Message[]}>({
-            url: `https://graph.microsoft.com/v1.0/users/${config.mailbox}/messages?$filter=internetMessageId eq '${msgId}'&$expand=Attachments&$top=1`,
+            url: url.toString(),
             headers: {
                 Authorization: `Bearer ${token}`,
             },

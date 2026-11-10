@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { parse as parseYaml } from 'yaml';
 import IPCIDR from 'ip-cidr';
-import { AxiosProxyConfig } from 'axios';
+import type { AxiosProxyConfig } from 'axios';
 
 // Set the working dir based on the --baseDir argument
 const baseDir = process.argv.find(arg=>arg.startsWith('--baseDir=') && arg.length > 10)?.substring(10);
@@ -71,6 +71,21 @@ export interface IConfig
         username?: string,
         password?: string,
     }
+}
+
+export function axiosProxyConfig(config: IConfig['httpProxy']): AxiosProxyConfig | undefined
+{
+    if(!config?.host || !config.port) return undefined;
+
+    return {
+        host: config.host,
+        port: config.port,
+        protocol: config.protocol ?? 'http',
+        auth: (config.username && config.password)?{
+            username: config.username,
+            password: config.password,
+        }:undefined,
+    };
 }
 
 export class InvalidConfig extends Error { }
@@ -316,23 +331,12 @@ export class Config
 
     static get httpProxyPassword()
     {
-        return this.#config.httpProxy?.username;
+        return this.#config.httpProxy?.password;
     }
 
     static get httpProxyConfig(): AxiosProxyConfig | undefined
     {
-        if(this.httpProxyHost && this.httpProxyPort)
-        {
-            return {
-                host: Config.httpProxyHost!,
-                port: Config.httpProxyPort!,
-                protocol: Config.httpProxyProtocol,
-                auth: (Config.httpProxyUsername && Config.httpProxyPassword)?{
-                    username: Config.httpProxyUsername,
-                    password: Config.httpProxyPassword,
-                }:undefined,
-            };
-        }
+        return axiosProxyConfig(this.#config.httpProxy);
     }
 
     /** Check if an IP address is allowed to connect */
