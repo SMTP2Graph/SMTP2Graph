@@ -39,7 +39,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: '24.x'
 
       - name: Install dependencies
         run: npm ci
@@ -60,7 +60,7 @@ jobs:
 
       - name: Run standard test on ${{ inputs.useArch || '(skipped)' }}
         if: ${{ inputs.useArch }}
-        run: docker run --rm --platform linux/${{ inputs.useArch }} -v $PWD:/usr/src/app -w /usr/src/app node:20 npm run test:receive -- --serverFile=dist/${{ inputs.binaryName }} --reporter json --reporter-option output=test-results.json
+        run: docker run --rm --platform linux/${{ inputs.useArch }} -v $PWD:/usr/src/app -w /usr/src/app node:24 npm run test:receive -- --serverFile=dist/${{ inputs.binaryName }} --reporter json --reporter-option output=test-results.json
 
       - name: Run standard tests
         if: ${{ ! inputs.useArch }}
