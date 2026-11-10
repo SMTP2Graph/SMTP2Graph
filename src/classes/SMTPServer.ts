@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { SMTPServer as NodeSMTP, SMTPServerOptions } from 'smtp-server';
 import { RateLimiterMemory, RateLimiterRes } from 'rate-limiter-flexible';
 import MailComposer from 'nodemailer/lib/mail-composer';
-import addressparser, { Address } from 'nodemailer/lib/addressparser';
+import addressparser, { type Address } from 'nodemailer/lib/addressparser';
 const Splitter = require('mailsplit').Splitter;
 const Joiner = require('mailsplit').Joiner;
 import { Config } from './Config';
@@ -147,7 +147,7 @@ export class SMTPServer
         const tmpFile = path.join(this.#queue.tempPath, `${session.id}-${randomUUID().toString()}.eml`);
         const writeStream = fs.createWriteStream(tmpFile);
         const mailCompile = mail.compile();
-        (mailCompile as any).keepBcc = true;
+        mailCompile.keepBcc = true;
         mailCompile.createReadStream().pipe(splitter).pipe(new Joiner()).pipe(writeStream);
 
         // Windows can keep a handle open for a short time even after 'finish' fires.
