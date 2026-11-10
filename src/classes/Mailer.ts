@@ -143,74 +143,74 @@ export class Mailer
     }
 
     /** Get sender address from EML/RFC822 data */
-static async #findSender(filePath: string)
-{
-    const readStream = fs.createReadStream(filePath);
-    const reader = readline.createInterface({
-        input: readStream,
-        crlfDelay: Infinity, // To treat \r\n and \n the same
-    });
-
-    let currentHeader: string | null = null;
-
-    const tryParseCurrentHeader = () => {
-        if (currentHeader === null) return null;
-        if (
-            currentHeader.toLowerCase().startsWith('sender:') ||
-            currentHeader.toLowerCase().startsWith('from:')
-        ) {
-            const parsed = addressparser(
-                currentHeader.substring(currentHeader.indexOf(':') + 1),
-                { flatten: true }
-            );
-            if (parsed.length && parsed[0].address) {
-                return parsed[0];
-            }
-        }
-        return null;
-    };
-
-    for await (const line of reader)
+    static async #findSender(filePath: string)
     {
-        if (line === '') // We've reached the end of the headers?
-        {
-            const result = tryParseCurrentHeader();
-            if (result) {
-                readStream.destroy();
-                return result;
-            }
-            break;
-        }
-        else if (/^[ \t]/.test(line)) // Folded continuation line
-        {
-            if (currentHeader !== null) {
-                // Unfold per RFC 5322: replace the fold with a single space
-                currentHeader += ' ' + line.trim();
-            }
-            // If currentHeader is null, this is a stray continuation with no
-            // preceding header (malformed) — safely ignore it.
-        }
-        else // New header line — check the previous one, then start fresh
-        {
-            const result = tryParseCurrentHeader();
-            if (result) {
-                readStream.destroy();
-                return result;
-            }
-            currentHeader = line;
-        }
-    }
+        const readStream = fs.createReadStream(filePath);
+        const reader = readline.createInterface({
+            input: readStream,
+            crlfDelay: Infinity, // To treat \r\n and \n the same
+        });
 
-    // In case the header block ended without a trailing blank line
-    const result = tryParseCurrentHeader();
-    if (result) {
+        let currentHeader: string | null = null;
+
+        const tryParseCurrentHeader = () => {
+            if (currentHeader === null) return null;
+            if (
+                currentHeader.toLowerCase().startsWith('sender:') ||
+                currentHeader.toLowerCase().startsWith('from:')
+            ) {
+                const parsed = addressparser(
+                    currentHeader.substring(currentHeader.indexOf(':') + 1),
+                    { flatten: true }
+                );
+                if (parsed.length && parsed[0].address) {
+                    return parsed[0];
+                }
+            }
+            return null;
+        };
+
+        for await (const line of reader)
+        {
+            if (line === '') // We've reached the end of the headers?
+            {
+                const result = tryParseCurrentHeader();
+                if (result) {
+                    readStream.destroy();
+                    return result;
+                }
+                break;
+            }
+            else if (/^[ \t]/.test(line)) // Folded continuation line
+            {
+                if (currentHeader !== null) {
+                    // Unfold per RFC 5322: replace the fold with a single space
+                    currentHeader += ' ' + line.trim();
+                }
+                // If currentHeader is null, this is a stray continuation with no
+                // preceding header (malformed) — safely ignore it.
+            }
+            else // New header line — check the previous one, then start fresh
+            {
+                const result = tryParseCurrentHeader();
+                if (result) {
+                    readStream.destroy();
+                    return result;
+                }
+                currentHeader = line;
+            }
+        }
+
+        // In case the header block ended without a trailing blank line
+        const result = tryParseCurrentHeader();
+        if (result) {
+            readStream.destroy();
+            return result;
+        }
+
         readStream.destroy();
-        return result;
+        return undefined;
     }
-
-    readStream.destroy();
-    return undefined;
-}
 
     static async #aquireToken(): Promise<string>
     {
