@@ -26,6 +26,11 @@ describe('Receive: IP whitelist', async function(){
         await submitAndVerifyMail({});
     });
 
+    it('Invalid CIDR', async function(){
+        await expect(server.restart({receive: {ipWhitelist: ['127.0.0.0/999']}}), 'Failed to restart server').to.eventually.be.fulfilled;
+        await expect(submitAndVerifyMail({}), 'Connection was accepted').to.eventually.be.rejectedWith(/not allowed to connect/i);
+    });
+
     it('Dissalowed IP', async function(){
         await expect(server.restart({receive: {ipWhitelist: ['127.0.0.2']}}), 'Failed to restart server').to.eventually.be.fulfilled;
         await expect(submitAndVerifyMail({}), 'Connectiong was accepted').to.eventually.be.rejectedWith(/not allowed to connect/i);
