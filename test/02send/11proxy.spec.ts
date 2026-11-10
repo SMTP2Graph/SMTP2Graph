@@ -1,5 +1,5 @@
 import http from 'http';
-import httpProxy from 'http-proxy';
+import net from 'net';
 import { expect } from 'chai';
 import { config } from '../_config';
 import { Server } from '../classes/Server';
@@ -21,7 +21,6 @@ describe('Send: Over HTTP proxy', async function(){
         },
     });
     let httpServer: http.Server | undefined;
-    const proxy = httpProxy.createProxyServer();
     const proxiedHosts: string[] = [];
 
     before('Start server', async function(){
@@ -30,12 +29,24 @@ describe('Send: Over HTTP proxy', async function(){
 
     before('Start proxy server', async function(){
         await expect(new Promise<void>((resolve,reject)=>{
-            httpServer = http.createServer((req, res)=>{
-                if(!req.url) return;
-                const url = new URL(req.url);
-                proxiedHosts.push(url.origin); // Keep track of requests send over the proxy
-                proxy.web(req, res, {target: url.origin});
-            }).listen(3000, undefined, undefined, resolve);
+            httpServer = http.createServer();
+
+            // All requests (MSAL and Graph) are HTTPS, which Axios tunnels using CONNECT
+            httpServer.on('connect', (req, clientSocket, head)=>{
+                const { hostname, port } = new URL(`https://${req.url}`);
+                proxiedHosts.push(`https://${hostname}`); // Keep track of requests send over the proxy
+
+                const serverSocket = net.connect(Number(port) || 443, hostname, ()=>{
+                    clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
+                    if(head.length) clientSocket.unshift(head); // Forward any data that came in with the CONNECT request
+                    serverSocket.pipe(clientSocket);
+                    clientSocket.pipe(serverSocket);
+                });
+                serverSocket.on('error', ()=>clientSocket.destroy());
+                clientSocket.on('error', ()=>serverSocket.destroy());
+            });
+
+            httpServer.listen(3000, undefined, undefined, resolve);
         })).to.eventually.be.fulfilled;
     });
 
