@@ -1,0 +1,30 @@
+# Example: run SMTP2Graph in Docker without a config.yml
+# Every setting from config.example.yml can be set using a SMTP2GRAPH_* environment variable (see readme.md)
+services:
+  smtp2graph:
+    image: smtp2graph/smtp2graph:latest
+    restart: unless-stopped
+    ports:
+      - "587:587"
+    volumes:
+      - ./data:/data # Mail queue and logs (and optionally key/certificate files)
+    environment:
+      SMTP2GRAPH_MODE: full
+      # App. registration
+      SMTP2GRAPH_SEND_APPREG_TENANT: contoso
+      SMTP2GRAPH_SEND_APPREG_ID: 01234567-89ab-cdef-0123-456789abcdef
+      SMTP2GRAPH_SEND_APPREG_SECRET: VGhpcyBpcyB2ZXJ5IHNlY3JldCE=
+      # Or use a client certificate instead of a secret
+      # SMTP2GRAPH_SEND_APPREG_CERTIFICATE_THUMBPRINT: 0123456789ABCDEF0123456789ABCDEF01234567
+      # SMTP2GRAPH_SEND_APPREG_CERTIFICATE_PRIVATEKEYPATH: /data/client.key
+      SMTP2GRAPH_SEND_RETRYLIMIT: 10
+      SMTP2GRAPH_SEND_RETRYINTERVAL: 10
+      # SMTP server
+      SMTP2GRAPH_RECEIVE_MAXSIZE: 25m
+      SMTP2GRAPH_RECEIVE_BANNER: My SMTP server
+      SMTP2GRAPH_RECEIVE_IPWHITELIST: 192.168.30.0/24,172.16.0.0/12
+      SMTP2GRAPH_RECEIVE_ALLOWEDFROM: noreply@example.com,something@example.com
+      SMTP2GRAPH_RECEIVE_REQUIREAUTH: true
+      SMTP2GRAPH_RECEIVE_USERS_0_USERNAME: user
+      SMTP2GRAPH_RECEIVE_USERS_0_PASSWORD: P@ssword!
+      SMTP2GRAPH_RECEIVE_USERS_0_ALLOWEDFROM: noreply@example.com
