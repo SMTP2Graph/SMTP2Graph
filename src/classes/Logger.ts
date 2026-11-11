@@ -1,12 +1,13 @@
 import path from 'path';
 import winston from 'winston';
+import { Config } from './Config';
 
 export interface ILogMeta extends Record<string, any>
 {
     error?: any;
 }
 
-const logsDir = 'logs';
+const logsDir = Config.logDir;
 
 const consoleFormat = winston.format.combine(
     winston.format.colorize(),

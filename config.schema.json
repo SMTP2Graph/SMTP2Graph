@@ -73,6 +73,11 @@
             "title": "Operation mode",
             "type": "string"
         },
+        "logDir": {
+            "title": "Log directory",
+            "description": "Path where log files are written (default: logs)",
+            "type": "string"
+        },
         "send": {
             "type": "object",
             "required": [
